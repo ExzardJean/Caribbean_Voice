@@ -1,0 +1,39 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<h1>Liste des ventes</h1>
+<table class="min-w-full bg-white rounded-xl shadow-sm border border-slate-200">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Client</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in sales %}
+        <tr>
+            <td>Vente #{{ sale.id }}</td>
+            <td>
+                {% if sale.customer %}
+                    {% if sale.customer.first_name and sale.customer.last_name %}
+                        {{ sale.customer.first_name }} {{ sale.customer.last_name }}
+                    {% elif sale.customer.first_name %}
+                        {{ sale.customer.first_name }}
+                    {% elif sale.customer.last_name %}
+                        {{ sale.customer.last_name }}
+                    {% else %}
+                        Anonyme
+                    {% endif %}
+                {% else %}
+                    Anonyme
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'sales_detail' sale.id %}" class="bg-blue-600 text-white px-3 py-1 rounded">Voir détail</a>
+                <button onclick="window.open('{% url 'sales_detail' sale.id %}', '_blank'); setTimeout(function(){window.print();}, 500);" class="bg-green-600 text-white px-3 py-1 rounded">Imprimer</button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

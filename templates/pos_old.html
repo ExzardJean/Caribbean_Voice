@@ -1,0 +1,527 @@
+{% extends 'dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="h-[calc(100vh-80px)] flex flex-col bg-slate-50">
+    <!-- POS Header -->
+    <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <h1 class="text-2xl font-bold text-slate-900">Point de Vente (POS)</h1>
+            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                Caisse Ouverte
+            </span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="openProformaModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Créer Proformat
+            </button>
+            <button onclick="closeCashRegister()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Fermer Caisse
+            </button>
+        </div>
+    </div>
+
+    <!-- POS Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        <!-- Left Side - Products Grid -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Search Bar with Scanner -->
+            <div class="bg-white border-b border-slate-200 p-4">
+                <div class="relative">
+                    <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input 
+                        type="text" 
+                        id="barcode-scanner"
+                        placeholder="Scanner le code-barres ou rechercher un produit (F2)..." 
+                        class="w-full pl-12 pr-4 py-4 text-lg border-2 border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        autofocus
+                        autocomplete="off"
+                    >
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                        <span class="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded">F2</span>
+                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Search Results Dropdown -->
+                <div id="search-results" class="hidden absolute z-50 mt-2 w-full max-w-2xl bg-white rounded-xl shadow-2xl border border-slate-200 max-h-96 overflow-y-auto">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+
+            <!-- Category Filters -->
+            <div class="bg-white border-b border-slate-200 px-4 py-3 flex gap-2 overflow-x-auto">
+                <button onclick="filterCategory('all')" class="category-btn active px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap">
+                    Tous
+                </button>
+                {% for category in categories %}
+                <button onclick="filterCategory('{{ category.id }}')" class="category-btn px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors whitespace-nowrap">
+                    {{ category.name }}
+                </button>
+                {% endfor %}
+            </div>
+
+            <!-- Products Grid -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    {% for product in products %}
+                    <button onclick="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.selling_price }}, '{{ product.sku }}')" 
+                            class="product-card bg-white rounded-lg border-2 border-slate-200 hover:border-blue-500 hover:shadow-lg transition-all p-3 text-left"
+                            data-category="{{ product.category.id }}">
+                        <div class="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg mb-2 flex items-center justify-center">
+                            {% if product.main_image %}
+                            <img src="{{ product.main_image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover rounded-lg">
+                            {% else %}
+                            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                            {% endif %}
+                        </div>
+                        <h3 class="font-semibold text-sm text-slate-900 mb-1 line-clamp-2">{{ product.name }}</h3>
+                        <p class="text-xs text-slate-600 mb-2">{{ product.sku }}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-lg font-bold text-blue-600">{{ product.selling_price }} HTG</span>
+                            <span class="text-xs text-slate-500">Stock: {{ product.current_stock }}</span>
+                        </div>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Cart -->
+        <div class="w-[450px] bg-white border-l border-slate-200 flex flex-col">
+            <!-- Cart Header -->
+            <div class="border-b border-slate-200 p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-slate-900">Panier</h2>
+                    <button onclick="clearCart()" class="text-red-600 hover:text-red-700 text-sm font-medium">
+                        Vider
+                    </button>
+                </div>
+                
+                <!-- Customer Selection -->
+                <div class="relative">
+                    <select id="customer-select" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Client de passage</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.first_name }} {{ customer.last_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Cart Items -->
+            <div id="cart-items" class="flex-1 overflow-y-auto p-4 space-y-2">
+                <div class="text-center text-slate-400 py-12">
+                    <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    <p class="text-sm">Panier vide</p>
+                    <p class="text-xs mt-1">Scannez ou sélectionnez des produits</p>
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="border-t border-slate-200 p-4 space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Sous-total</span>
+                    <span id="subtotal" class="font-semibold">0.00 HTG</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Remise</span>
+                    <input type="number" id="discount" value="0" min="0" max="100" 
+                           class="w-20 px-2 py-1 border border-slate-300 rounded text-right"
+                           onchange="updateTotals()"> %
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Taxe (0%)</span>
+                    <span id="tax" class="font-semibold">0.00 HTG</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold border-t pt-3">
+                    <span>Total</span>
+                    <span id="total" class="text-blue-600">0.00 HTG</span>
+                </div>
+
+                <!-- Payment Buttons -->
+                <div class="grid grid-cols-2 gap-2 pt-2">
+                    <button onclick="processPayment('cash')" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        Espèces (F5)
+                    </button>
+                    <button onclick="processPayment('card')" class="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                        </svg>
+                        Carte (F6)
+                    </button>
+                </div>
+                <button onclick="processPayment('mobile')" class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    Mobile Money (F7)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">Paiement</h2>
+        
+        <div class="space-y-4 mb-6">
+            <div class="flex justify-between text-lg">
+                <span class="text-slate-600">Montant à payer</span>
+                <span id="payment-amount" class="font-bold text-blue-600">0.00 HTG</span>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Montant reçu</label>
+                <input type="number" id="amount-received" 
+                       class="w-full px-4 py-3 text-lg border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="0.00"
+                       step="0.01"
+                       autofocus>
+            </div>
+            
+            <div class="flex justify-between text-lg p-4 bg-green-50 rounded-lg">
+                <span class="text-slate-700 font-medium">Monnaie à rendre</span>
+                <span id="change-amount" class="font-bold text-green-600">0.00 HTG</span>
+            </div>
+        </div>
+
+        <div class="flex gap-3">
+            <button onclick="closePaymentModal()" class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">
+                Annuler (ESC)
+            </button>
+            <button onclick="confirmPayment()" class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+                Confirmer (ENTER)
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global cart state
+let cart = [];
+let currentPaymentMethod = 'cash';
+
+// Focus on barcode scanner on load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('barcode-scanner').focus();
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F2') {
+            e.preventDefault();
+            document.getElementById('barcode-scanner').focus();
+        } else if (e.key === 'F5') {
+            e.preventDefault();
+            processPayment('cash');
+        } else if (e.key === 'F6') {
+            e.preventDefault();
+            processPayment('card');
+        } else if (e.key === 'F7') {
+            e.preventDefault();
+            processPayment('mobile');
+        } else if (e.key === 'Escape') {
+            closePaymentModal();
+        }
+    });
+});
+
+// Barcode scanner input handler
+document.getElementById('barcode-scanner').addEventListener('input', function(e) {
+    const query = e.target.value.trim();
+    if (query.length >= 2) {
+        searchProducts(query);
+    } else {
+        document.getElementById('search-results').classList.add('hidden');
+    }
+});
+
+// Search products (instant search)
+function searchProducts(query) {
+    // TODO: Implement AJAX search
+    console.log('Searching for:', query);
+}
+
+// Filter by category
+function filterCategory(categoryId) {
+    const buttons = document.querySelectorAll('.category-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('active', 'bg-blue-600', 'text-white');
+        btn.classList.add('bg-slate-100', 'text-slate-700');
+    });
+    event.target.classList.add('active', 'bg-blue-600', 'text-white');
+    event.target.classList.remove('bg-slate-100', 'text-slate-700');
+    
+    const products = document.querySelectorAll('.product-card');
+    products.forEach(product => {
+        if (categoryId === 'all' || product.dataset.category === categoryId) {
+            product.style.display = 'block';
+        } else {
+            product.style.display = 'none';
+        }
+    });
+}
+
+// Add product to cart
+function addToCart(productId, productName, price, sku) {
+    const existingItem = cart.find(item => item.id === productId);
+    
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        cart.push({
+            id: productId,
+            name: productName,
+            price: price,
+            sku: sku,
+            quantity: 1
+        });
+    }
+    
+    renderCart();
+    updateTotals();
+    
+    // Play success sound (optional)
+    // new Audio('/static/sounds/beep.mp3').play();
+}
+
+// Render cart items
+function renderCart() {
+    const cartContainer = document.getElementById('cart-items');
+    
+    if (cart.length === 0) {
+        cartContainer.innerHTML = `
+            <div class="text-center text-slate-400 py-12">
+                <svg class="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <p class="text-sm">Panier vide</p>
+                <p class="text-xs mt-1">Scannez ou sélectionnez des produits</p>
+            </div>
+        `;
+        return;
+    }
+    
+    cartContainer.innerHTML = cart.map((item, index) => `
+        <div class="bg-slate-50 rounded-lg p-3 flex items-center gap-3">
+            <div class="flex-1">
+                <h4 class="font-semibold text-sm text-slate-900">${item.name}</h4>
+                <p class="text-xs text-slate-600">${item.sku}</p>
+                <p class="text-sm font-bold text-blue-600 mt-1">${item.price} HTG</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="updateQuantity(${index}, -1)" class="w-8 h-8 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                    </svg>
+                </button>
+                <span class="w-12 text-center font-semibold">${item.quantity}</span>
+                <button onclick="updateQuantity(${index}, 1)" class="w-8 h-8 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 flex items-center justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                </button>
+            </div>
+            <button onclick="removeFromCart(${index})" class="text-red-600 hover:text-red-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+            </button>
+        </div>
+    `).join('');
+}
+
+// Update quantity
+function updateQuantity(index, change) {
+    cart[index].quantity += change;
+    if (cart[index].quantity <= 0) {
+        cart.splice(index, 1);
+    }
+    renderCart();
+    updateTotals();
+}
+
+// Remove from cart
+function removeFromCart(index) {
+    cart.splice(index, 1);
+    renderCart();
+    updateTotals();
+}
+
+// Clear cart
+function clearCart() {
+    if (confirm('Voulez-vous vraiment vider le panier ?')) {
+        cart = [];
+        renderCart();
+        updateTotals();
+    }
+}
+
+// Update totals
+function updateTotals() {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discountPercent = parseFloat(document.getElementById('discount').value) || 0;
+    const discountAmount = subtotal * (discountPercent / 100);
+    const tax = 0; // No tax for now
+    const total = subtotal - discountAmount + tax;
+    
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' HTG';
+    document.getElementById('tax').textContent = tax.toFixed(2) + ' HTG';
+    document.getElementById('total').textContent = total.toFixed(2) + ' HTG';
+}
+
+// Process payment
+function processPayment(method) {
+    if (cart.length === 0) {
+        alert('Le panier est vide !');
+        return;
+    }
+    
+    currentPaymentMethod = method;
+    const total = parseFloat(document.getElementById('total').textContent);
+    document.getElementById('payment-amount').textContent = total.toFixed(2) + ' HTG';
+    document.getElementById('payment-modal').classList.remove('hidden');
+    
+    // Auto-fill amount for card/mobile
+    if (method !== 'cash') {
+        document.getElementById('amount-received').value = total.toFixed(2);
+        calculateChange();
+    }
+    
+    setTimeout(() => {
+        document.getElementById('amount-received').focus();
+        document.getElementById('amount-received').select();
+    }, 100);
+}
+
+// Calculate change
+document.getElementById('amount-received').addEventListener('input', calculateChange);
+
+function calculateChange() {
+    const total = parseFloat(document.getElementById('payment-amount').textContent);
+    const received = parseFloat(document.getElementById('amount-received').value) || 0;
+    const change = received - total;
+    
+    document.getElementById('change-amount').textContent = change.toFixed(2) + ' HTG';
+    
+    if (change < 0) {
+        document.getElementById('change-amount').classList.remove('text-green-600');
+        document.getElementById('change-amount').classList.add('text-red-600');
+    } else {
+        document.getElementById('change-amount').classList.remove('text-red-600');
+        document.getElementById('change-amount').classList.add('text-green-600');
+    }
+}
+
+// Confirm payment
+function confirmPayment() {
+    const total = parseFloat(document.getElementById('payment-amount').textContent);
+    const received = parseFloat(document.getElementById('amount-received').value) || 0;
+    
+    if (received < total) {
+        alert('Le montant reçu est insuffisant !');
+        return;
+    }
+    
+    // TODO: Send to backend
+    console.log('Payment confirmed:', {
+        method: currentPaymentMethod,
+        total: total,
+        received: received,
+        change: received - total,
+        cart: cart
+    });
+    
+    // Print receipt
+    printReceipt();
+    
+    // Clear cart
+    cart = [];
+    renderCart();
+    updateTotals();
+    closePaymentModal();
+    
+    alert('Vente enregistrée avec succès !');
+}
+
+// Close payment modal
+function closePaymentModal() {
+    document.getElementById('payment-modal').classList.add('hidden');
+    document.getElementById('amount-received').value = '';
+    document.getElementById('change-amount').textContent = '0.00 HTG';
+}
+
+// Print receipt (80mm thermal printer)
+function printReceipt() {
+    // TODO: Implement thermal printer integration
+    console.log('Printing receipt...');
+    window.print();
+}
+
+// Open proforma modal
+function openProformaModal() {
+    if (cart.length === 0) {
+        alert('Le panier est vide !');
+        return;
+    }
+    // TODO: Implement proforma creation
+    alert('Fonctionnalité de proformat en cours d\'implémentation...');
+}
+
+// Close cash register
+function closeCashRegister() {
+    if (confirm('Voulez-vous fermer la caisse ?')) {
+        // TODO: Implement cash register closing
+        alert('Fermeture de caisse en cours d\'implémentation...');
+    }
+}
+</script>
+
+<!-- Print Styles for 80mm Thermal Printer -->
+<style media="print">
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+    
+    body * {
+        visibility: hidden;
+    }
+    
+    #receipt, #receipt * {
+        visibility: visible;
+    }
+    
+    #receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+    }
+</style>
+
+<!-- Hidden Receipt Template -->
+<div id="receipt" style="display: none;">
+    <!-- Receipt content will be generated here -->
+</div>
+{% endblock %}

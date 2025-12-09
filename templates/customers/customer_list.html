@@ -1,0 +1,9 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<h1>Liste des clients</h1>
+<ul>
+    {% for customer in customers %}
+    <li>{{ customer.first_name }}{% if customer.last_name %} {{ customer.last_name }}{% endif %}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

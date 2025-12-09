@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caribbean Voice - Écran Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .product-enter {
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .7;
+            }
+        }
+        
+        .slide-fade {
+            animation: slideFade 8s ease-in-out infinite;
+        }
+        
+        @keyframes slideFade {
+            0%, 100% { opacity: 0; transform: translateY(20px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+    <!-- Header -->
+    <div class="bg-white shadow-lg px-8 py-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <img src="/static/logo.svg" alt="Caribbean Voice" class="h-16 w-16">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-900">Caribbean Voice</h1>
+                    <p class="text-slate-600">Système de Gestion de Stock</p>
+                </div>
+            </div>
+            <div id="clock" class="text-2xl font-semibold text-slate-700"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col p-8">
+        <!-- Idle State (Publicités) -->
+        <div id="idle-state" class="flex-1 flex flex-col items-center justify-center text-white">
+            <div class="text-center space-y-8">
+                <svg class="w-32 h-32 mx-auto pulse-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                </svg>
+                <h2 class="text-6xl font-bold">Bienvenue chez Caribbean Voice</h2>
+                <p class="text-3xl">Votre magasin de confiance pour l'électronique et le solaire</p>
+                
+                <div class="mt-12 space-y-6 slide-fade">
+                    <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-8">
+                        <h3 class="text-4xl font-bold mb-4">🎉 Promotions du Jour</h3>
+                        <p class="text-2xl">Panneaux Solaires -15% • Laptops -10% • Climatiseurs -20%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active State (Liste Produits) -->
+        <div id="active-state" class="hidden flex-1 flex flex-col">
+            <!-- Products List -->
+            <div class="flex-1 bg-white rounded-2xl shadow-2xl p-8 overflow-hidden">
+                <div class="h-full flex flex-col">
+                    <h2 class="text-4xl font-bold text-slate-900 mb-6">Vos Achats</h2>
+                    
+                    <div class="flex-1 overflow-y-auto">
+                        <table class="w-full">
+                            <thead class="bg-slate-100 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-4 text-left text-2xl font-semibold text-slate-700">Produit</th>
+                                    <th class="px-6 py-4 text-center text-2xl font-semibold text-slate-700">Qté</th>
+                                    <th class="px-6 py-4 text-right text-2xl font-semibold text-slate-700">Prix Unit.</th>
+                                    <th class="px-6 py-4 text-right text-2xl font-semibold text-slate-700">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-list" class="divide-y divide-slate-200">
+                                <!-- Products will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Totals -->
+            <div class="mt-6 bg-white rounded-2xl shadow-2xl p-8">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-3xl font-semibold text-slate-700">Sous-total</span>
+                        <span id="subtotal" class="text-3xl font-bold text-slate-900">0 HTG</span>
+                    </div>
+                    
+                    <div id="discount-row" class="hidden flex justify-between items-center">
+                        <span class="text-3xl font-semibold text-red-600">Remise</span>
+                        <span id="discount" class="text-3xl font-bold text-red-600">0 HTG</span>
+                    </div>
+                    
+                    <div id="tax-row" class="hidden flex justify-between items-center">
+                        <span class="text-3xl font-semibold text-slate-700">Taxes</span>
+                        <span id="tax" class="text-3xl font-bold text-slate-900">0 HTG</span>
+                    </div>
+                    
+                    <div class="border-t-4 border-slate-300 pt-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-5xl font-bold text-slate-900">TOTAL</span>
+                            <span id="total" class="text-6xl font-bold text-green-600">0 HTG</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment State -->
+        <div id="payment-state" class="hidden flex-1 flex items-center justify-center text-white">
+            <div class="text-center space-y-8">
+                <div class="relative">
+                    <svg class="w-48 h-48 mx-auto animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                </div>
+                <h2 class="text-6xl font-bold">Paiement en cours...</h2>
+                <p class="text-3xl">Veuillez patienter</p>
+            </div>
+        </div>
+
+        <!-- Thank You State -->
+        <div id="thankyou-state" class="hidden flex-1 flex items-center justify-center text-white">
+            <div class="text-center space-y-8">
+                <svg class="w-48 h-48 mx-auto text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <h2 class="text-7xl font-bold">Merci de votre visite !</h2>
+                <div class="space-y-4">
+                    <p class="text-4xl">Montant payé : <span id="amount-paid" class="font-bold">0 HTG</span></p>
+                    <p class="text-4xl">Monnaie rendue : <span id="change-amount" class="font-bold text-green-400">0 HTG</span></p>
+                </div>
+                <p class="text-3xl mt-8">À bientôt chez Caribbean Voice ! 🎉</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const DISPLAY_ID = 'customer_display_' + Date.now();
+        let currentState = 'idle'; // idle, active, payment, thankyou
+        let cart = [];
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 10;
+        
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('fr-FR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('clock').textContent = timeString;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // State Management
+        function setState(newState) {
+            // Hide all states
+            document.getElementById('idle-state').classList.add('hidden');
+            document.getElementById('active-state').classList.add('hidden');
+            document.getElementById('payment-state').classList.add('hidden');
+            document.getElementById('thankyou-state').classList.add('hidden');
+            
+            // Show new state
+            document.getElementById(newState + '-state').classList.remove('hidden');
+            currentState = newState;
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-HT', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            }).format(amount) + ' HTG';
+        }
+
+        // Update display
+        function updateDisplay() {
+            const productsList = document.getElementById('products-list');
+            productsList.innerHTML = '';
+            
+            let subtotal = 0;
+            
+            cart.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = 'product-enter';
+                row.innerHTML = `
+                    <td class="px-6 py-4 text-2xl text-slate-900">${item.name}</td>
+                    <td class="px-6 py-4 text-2xl text-center font-semibold text-blue-600">${item.quantity}</td>
+                    <td class="px-6 py-4 text-2xl text-right text-slate-700">${formatCurrency(item.price)}</td>
+                    <td class="px-6 py-4 text-2xl text-right font-bold text-slate-900">${formatCurrency(item.price * item.quantity)}</td>
+                `;
+                productsList.appendChild(row);
+                
+                subtotal += item.price * item.quantity;
+            });
+            
+            // Update totals
+            document.getElementById('subtotal').textContent = formatCurrency(subtotal);
+            
+            // Discount (if any)
+            const discountPercent = cart.length > 0 && cart[0].discount ? cart[0].discount : 0;
+            const discountAmount = subtotal * (discountPercent / 100);
+            if (discountAmount > 0) {
+                document.getElementById('discount-row').classList.remove('hidden');
+                document.getElementById('discount').textContent = '-' + formatCurrency(discountAmount);
+            } else {
+                document.getElementById('discount-row').classList.add('hidden');
+            }
+            
+            // Tax (if any)
+            const taxPercent = 0; // No tax for now
+            const taxAmount = (subtotal - discountAmount) * (taxPercent / 100);
+            if (taxAmount > 0) {
+                document.getElementById('tax-row').classList.remove('hidden');
+                document.getElementById('tax').textContent = formatCurrency(taxAmount);
+            } else {
+                document.getElementById('tax-row').classList.add('hidden');
+            }
+            
+            // Total
+            const total = subtotal - discountAmount + taxAmount;
+            document.getElementById('total').textContent = formatCurrency(total);
+        }
+
+        // WebSocket Connection (with fallback to polling)
+        let ws = null;
+        let pollingInterval = null;
+        
+        function connectWebSocket() {
+            // Try WebSocket first
+            try {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = `${protocol}//${window.location.host}/ws/customer-display/`;
+                
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = function() {
+                    console.log('WebSocket connected');
+                    reconnectAttempts = 0;
+                    
+                    // Register this display
+                    ws.send(JSON.stringify({
+                        type: 'register',
+                        display_id: DISPLAY_ID
+                    }));
+                };
+                
+                ws.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    handleMessage(data);
+                };
+                
+                ws.onerror = function(error) {
+                    console.error('WebSocket error:', error);
+                    fallbackToPolling();
+                };
+                
+                ws.onclose = function() {
+                    console.log('WebSocket closed');
+                    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                        reconnectAttempts++;
+                        setTimeout(connectWebSocket, 3000 * reconnectAttempts);
+                    } else {
+                        fallbackToPolling();
+                    }
+                };
+            } catch (error) {
+                console.error('WebSocket not supported:', error);
+                fallbackToPolling();
+            }
+        }
+        
+        function fallbackToPolling() {
+            console.log('Falling back to polling');
+            if (pollingInterval) return;
+            
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/pos/customer-display/poll/?display_id=${DISPLAY_ID}`);
+                    const data = await response.json();
+                    if (data.messages) {
+                        data.messages.forEach(handleMessage);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                }
+            }, 1000); // Poll every second
+        }
+        
+        function handleMessage(data) {
+            console.log('Received message:', data);
+            
+            switch (data.event) {
+                case 'product_added':
+                    addProduct(data.product);
+                    break;
+                    
+                case 'product_removed':
+                    removeProduct(data.product_id);
+                    break;
+                    
+                case 'quantity_changed':
+                    updateQuantity(data.product_id, data.quantity);
+                    break;
+                    
+                case 'discount_applied':
+                    applyDiscount(data.discount);
+                    break;
+                    
+                case 'payment_started':
+                    setState('payment');
+                    break;
+                    
+                case 'payment_completed':
+                    showThankYou(data.amount_paid, data.change);
+                    break;
+                    
+                case 'sale_cancelled':
+                    resetDisplay();
+                    break;
+                    
+                case 'cart_updated':
+                    cart = data.cart || [];
+                    if (cart.length > 0) {
+                        setState('active');
+                        updateDisplay();
+                    } else {
+                        setState('idle');
+                    }
+                    break;
+            }
+        }
+        
+        function addProduct(product) {
+            const existing = cart.find(item => item.id === product.id);
+            if (existing) {
+                existing.quantity += product.quantity || 1;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    price: product.price,
+                    quantity: product.quantity || 1
+                });
+            }
+            
+            setState('active');
+            updateDisplay();
+        }
+        
+        function removeProduct(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            if (cart.length === 0) {
+                setState('idle');
+            } else {
+                updateDisplay();
+            }
+        }
+        
+        function updateQuantity(productId, quantity) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity = quantity;
+                if (quantity <= 0) {
+                    removeProduct(productId);
+                } else {
+                    updateDisplay();
+                }
+            }
+        }
+        
+        function applyDiscount(discount) {
+            cart.forEach(item => {
+                item.discount = discount;
+            });
+            updateDisplay();
+        }
+        
+        function showThankYou(amountPaid, change) {
+            document.getElementById('amount-paid').textContent = formatCurrency(amountPaid);
+            document.getElementById('change-amount').textContent = formatCurrency(change);
+            setState('thankyou');
+            
+            // Reset after 5 seconds
+            setTimeout(resetDisplay, 5000);
+        }
+        
+        function resetDisplay() {
+            cart = [];
+            setState('idle');
+        }
+        
+        // Request fullscreen
+        function requestFullscreen() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Request fullscreen
+            setTimeout(requestFullscreen, 1000);
+            
+            // Connect WebSocket
+            connectWebSocket();
+            
+            // Start in idle state
+            setState('idle');
+        });
+        
+        // Handle fullscreen changes
+        document.addEventListener('fullscreenchange', function() {
+            if (!document.fullscreenElement) {
+                // Exited fullscreen, request again
+                setTimeout(requestFullscreen, 2000);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,442 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Fournisseurs - Caribbean Voice Stock{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Gestion des Fournisseurs</h1>
+            <p class="text-slate-600 mt-1">Gérez vos fournisseurs et leur évaluation</p>
+        </div>
+        <button onclick="openSupplierModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Nouveau Fournisseur
+        </button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-600">Total Fournisseurs</p>
+                    <p class="text-3xl font-bold text-slate-900 mt-1">{{ total_suppliers }}</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-600">Fournisseurs Actifs</p>
+                    <p class="text-3xl font-bold text-green-600 mt-1">{{ active_suppliers }}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-600">Total Achats</p>
+                    <p class="text-3xl font-bold text-blue-600 mt-1">{{ total_purchases|floatformat:0 }} HTG</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-600">Note Moyenne</p>
+                    <p class="text-3xl font-bold text-yellow-600 mt-1">{{ average_rating|floatformat:1 }}/5</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-6 border border-slate-200">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">Rechercher</label>
+                <div class="relative">
+                    <input type="text" id="search-input" 
+                           class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Nom, téléphone, email...">
+                    <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Statut</label>
+                <select id="status-filter" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Tous</option>
+                    <option value="active">Actif</option>
+                    <option value="inactive">Inactif</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suppliers Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Fournisseur</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Contact</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Évaluation</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Total Achats</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Statut</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200" id="suppliers-tbody">
+                    {% for supplier in suppliers %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <span class="text-purple-600 font-semibold">{{ supplier.name.0|upper }}</span>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-900">{{ supplier.name }}</p>
+                                    <p class="text-sm text-slate-500">Fournisseur #{{ supplier.id }}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm text-slate-900">{{ supplier.phone|default:"-" }}</p>
+                            <p class="text-sm text-slate-500">{{ supplier.email|default:"-" }}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-1">
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= supplier.rating %}
+                                    <svg class="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    {% else %}
+                                    <svg class="w-5 h-5 text-slate-300 fill-current" viewBox="0 0 20 20">
+                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                    </svg>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="text-sm text-slate-600 ml-1">({{ supplier.rating|floatformat:1 }})</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <p class="font-semibold text-slate-900">{{ supplier.total_purchases|default:0|floatformat:2 }} HTG</p>
+                            <p class="text-sm text-slate-500">{{ supplier.purchase_count|default:0 }} commandes</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            {% if supplier.is_active %}
+                            <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Actif</span>
+                            {% else %}
+                            <span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button onclick="viewSupplier({{ supplier.id }})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Voir détails">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="editSupplier({{ supplier.id }})" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Modifier">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="deleteSupplier({{ supplier.id }}, '{{ supplier.name }}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center">
+                                <svg class="w-16 h-16 text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                                <p class="text-slate-500 text-lg font-medium">Aucun fournisseur trouvé</p>
+                                <p class="text-slate-400 text-sm mt-1">Commencez par ajouter votre premier fournisseur</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Supplier Modal (Create/Edit) -->
+<div id="supplier-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <h2 id="modal-title" class="text-2xl font-bold text-slate-900">Nouveau Fournisseur</h2>
+            <button onclick="closeSupplierModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="supplier-form" class="p-6 space-y-6">
+            {% csrf_token %}
+            <input type="hidden" id="supplier-id" name="id">
+
+            <!-- Name -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Nom du fournisseur *</label>
+                <input type="text" name="name" id="supplier-name" required
+                       class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="ABC Distribution">
+            </div>
+
+            <!-- Contact Info -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                    <input type="tel" name="phone" id="supplier-phone"
+                           class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="+509 1234 5678">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <input type="email" name="email" id="supplier-email"
+                           class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="contact@supplier.com">
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+                <textarea name="address" id="supplier-address" rows="2"
+                          class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="123 Rue Example, Port-au-Prince"></textarea>
+            </div>
+
+            <!-- Rating -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Évaluation</label>
+                <div class="flex items-center gap-2">
+                    {% for i in "12345" %}
+                    <button type="button" onclick="setRating({{ forloop.counter }})" class="rating-star text-slate-300 hover:text-yellow-400 transition-colors" data-rating="{{ forloop.counter }}">
+                        <svg class="w-8 h-8 fill-current" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                        </svg>
+                    </button>
+                    {% endfor %}
+                    <input type="hidden" name="rating" id="supplier-rating" value="3">
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+                <textarea name="notes" id="supplier-notes" rows="3"
+                          class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Notes supplémentaires..."></textarea>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="button" onclick="closeSupplierModal()" class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// Open supplier modal
+function openSupplierModal(supplierId = null) {
+    document.getElementById('supplier-modal').classList.remove('hidden');
+    document.getElementById('modal-title').textContent = supplierId ? 'Modifier Fournisseur' : 'Nouveau Fournisseur';
+    
+    if (supplierId) {
+        // Load supplier data
+        // TODO: Implement
+    } else {
+        document.getElementById('supplier-form').reset();
+        document.getElementById('supplier-id').value = '';
+        setRating(3); // Default rating
+    }
+}
+
+// Close supplier modal
+function closeSupplierModal() {
+    document.getElementById('supplier-modal').classList.add('hidden');
+    document.getElementById('supplier-form').reset();
+}
+
+// Set rating
+function setRating(rating) {
+    document.getElementById('supplier-rating').value = rating;
+    const stars = document.querySelectorAll('.rating-star');
+    stars.forEach((star, index) => {
+        if (index < rating) {
+            star.classList.remove('text-slate-300');
+            star.classList.add('text-yellow-400');
+        } else {
+            star.classList.remove('text-yellow-400');
+            star.classList.add('text-slate-300');
+        }
+    });
+}
+
+// Submit supplier form
+document.getElementById('supplier-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const supplierId = document.getElementById('supplier-id').value;
+    const url = supplierId ? `/suppliers/update/${supplierId}/` : '/suppliers/create/';
+    
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Fournisseur enregistré avec succès !');
+            closeSupplierModal();
+            window.location.reload();
+        } else {
+            alert('Erreur: ' + (data.error || 'Une erreur est survenue'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de l\'enregistrement du fournisseur');
+    });
+});
+
+// View supplier
+function viewSupplier(supplierId) {
+    window.location.href = `/suppliers/${supplierId}/`;
+}
+
+// Edit supplier
+function editSupplier(supplierId) {
+    openSupplierModal(supplierId);
+}
+
+// Delete supplier
+function deleteSupplier(supplierId, supplierName) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le fournisseur "${supplierName}" ?`)) {
+        return;
+    }
+    
+    fetch(`/suppliers/delete/${supplierId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Fournisseur supprimé avec succès !');
+            window.location.reload();
+        } else {
+            alert('Erreur: ' + (data.error || 'Impossible de supprimer ce fournisseur'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur lors de la suppression du fournisseur');
+    });
+}
+
+// Instant search
+let searchTimeout = null;
+document.getElementById('search-input')?.addEventListener('input', function(e) {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        filterSuppliers();
+    }, 200);
+});
+
+document.getElementById('status-filter')?.addEventListener('change', filterSuppliers);
+
+function filterSuppliers() {
+    const search = document.getElementById('search-input').value.toLowerCase();
+    const status = document.getElementById('status-filter').value;
+    
+    // TODO: Implement AJAX filtering or client-side filtering
+    console.log('Filtering:', { search, status });
+}
+
+// Close modal on ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeSupplierModal();
+    }
+});
+
+// Initialize rating on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setRating(3);
+});
+</script>
+{% endblock %}

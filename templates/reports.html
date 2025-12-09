@@ -1,0 +1,389 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Rapports - Caribbean Voice{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Rapports et Analyses</h1>
+        <p class="text-gray-600">Visualisez les performances de votre entreprise</p>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Période</label>
+                <select id="periodFilter" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="7">7 derniers jours</option>
+                    <option value="30" selected>30 derniers jours</option>
+                    <option value="90">90 derniers jours</option>
+                    <option value="365">1 an</option>
+                    <option value="custom">Personnalisé</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de début</label>
+                <input type="date" id="startDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date de fin</label>
+                <input type="date" id="endDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex items-end">
+                <button onclick="updateReports()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                    Actualiser
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium mb-1">Revenus Totaux</p>
+                    <h3 class="text-3xl font-bold">{{ total_revenue|floatformat:2 }} HTG</h3>
+                    <p class="text-green-100 text-xs mt-1">+12% vs période précédente</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium mb-1">Nombre de Ventes</p>
+                    <h3 class="text-3xl font-bold">{{ total_sales }}</h3>
+                    <p class="text-blue-100 text-xs mt-1">{{ avg_sales_per_day|floatformat:1 }} ventes/jour</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm font-medium mb-1">Panier Moyen</p>
+                    <h3 class="text-3xl font-bold">{{ avg_order_value|floatformat:2 }} HTG</h3>
+                    <p class="text-purple-100 text-xs mt-1">+5% vs période précédente</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-orange-100 text-sm font-medium mb-1">Marge Bénéficiaire</p>
+                    <h3 class="text-3xl font-bold">{{ profit_margin|floatformat:1 }}%</h3>
+                    <p class="text-orange-100 text-xs mt-1">{{ total_profit|floatformat:2 }} HTG</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-3">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Sales Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Évolution des Ventes</h2>
+            <canvas id="salesChart" height="300"></canvas>
+        </div>
+
+        <!-- Revenue Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Revenus par Jour</h2>
+            <canvas id="revenueChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Top Products Chart -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Top 5 Produits</h2>
+            <canvas id="topProductsChart" height="300"></canvas>
+        </div>
+
+        <!-- Category Distribution -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Ventes par Catégorie</h2>
+            <canvas id="categoryChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Charts Row 3 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Payment Methods -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Méthodes de Paiement</h2>
+            <canvas id="paymentMethodsChart" height="300"></canvas>
+        </div>
+
+        <!-- Stock Value -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Valeur du Stock</h2>
+            <canvas id="stockValueChart" height="300"></canvas>
+        </div>
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="flex justify-end gap-4">
+        <button onclick="exportToPDF()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>
+            Exporter en PDF
+        </button>
+        <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            Exporter en Excel
+        </button>
+    </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
+<script>
+// Sample data - Replace with actual data from backend
+const salesData = {{ sales_data|safe }};
+const revenueData = {{ revenue_data|safe }};
+const topProductsData = {{ top_products_data|safe }};
+const categoryData = {{ category_data|safe }};
+const paymentMethodsData = {{ payment_methods_data|safe }};
+const stockValueData = {{ stock_value_data|safe }};
+
+// Sales Chart
+const salesCtx = document.getElementById('salesChart').getContext('2d');
+new Chart(salesCtx, {
+    type: 'line',
+    data: {
+        labels: salesData.labels || ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        datasets: [{
+            label: 'Nombre de ventes',
+            data: salesData.values || [12, 19, 15, 25, 22, 30, 28],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Revenue Chart
+const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+new Chart(revenueCtx, {
+    type: 'bar',
+    data: {
+        labels: revenueData.labels || ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        datasets: [{
+            label: 'Revenus (HTG)',
+            data: revenueData.values || [15000, 23000, 18000, 32000, 28000, 45000, 38000],
+            backgroundColor: 'rgba(34, 197, 94, 0.8)',
+            borderColor: 'rgb(34, 197, 94)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Top Products Chart
+const topProductsCtx = document.getElementById('topProductsChart').getContext('2d');
+new Chart(topProductsCtx, {
+    type: 'horizontalBar',
+    data: {
+        labels: topProductsData.labels || ['Panneau Solaire 300W', 'Laptop Dell', 'iPhone 13', 'Samsung Galaxy', 'Climatiseur'],
+        datasets: [{
+            label: 'Quantité vendue',
+            data: topProductsData.values || [45, 38, 32, 28, 25],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            x: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Category Chart
+const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+new Chart(categoryCtx, {
+    type: 'doughnut',
+    data: {
+        labels: categoryData.labels || ['Solaire', 'Électronique', 'Informatique', 'Électroménager'],
+        datasets: [{
+            data: categoryData.values || [35, 30, 20, 15],
+            backgroundColor: [
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 99, 132, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right'
+            }
+        }
+    }
+});
+
+// Payment Methods Chart
+const paymentMethodsCtx = document.getElementById('paymentMethodsChart').getContext('2d');
+new Chart(paymentMethodsCtx, {
+    type: 'pie',
+    data: {
+        labels: paymentMethodsData.labels || ['Espèces', 'Carte', 'Mobile Money'],
+        datasets: [{
+            data: paymentMethodsData.values || [50, 30, 20],
+            backgroundColor: [
+                'rgba(34, 197, 94, 0.8)',
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(168, 85, 247, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Stock Value Chart
+const stockValueCtx = document.getElementById('stockValueChart').getContext('2d');
+new Chart(stockValueCtx, {
+    type: 'bar',
+    data: {
+        labels: stockValueData.labels || ['Solaire', 'Électronique', 'Informatique', 'Électroménager'],
+        datasets: [{
+            label: 'Valeur (HTG)',
+            data: stockValueData.values || [125000, 98000, 87000, 65000],
+            backgroundColor: 'rgba(249, 115, 22, 0.8)',
+            borderColor: 'rgb(249, 115, 22)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+function updateReports() {
+    const period = document.getElementById('periodFilter').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    // Reload page with new parameters
+    window.location.href = `/reports/?period=${period}&start=${startDate}&end=${endDate}`;
+}
+
+function exportToPDF() {
+    alert('Export PDF en cours de développement...');
+}
+
+function exportToExcel() {
+    alert('Export Excel en cours de développement...');
+}
+
+// Period filter change handler
+document.getElementById('periodFilter').addEventListener('change', function() {
+    if (this.value === 'custom') {
+        document.getElementById('startDate').disabled = false;
+        document.getElementById('endDate').disabled = false;
+    } else {
+        document.getElementById('startDate').disabled = true;
+        document.getElementById('endDate').disabled = true;
+    }
+});
+</script>
+{% endblock %}

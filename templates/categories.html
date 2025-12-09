@@ -1,0 +1,442 @@
+{% extends 'dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900">Catégories</h1>
+            <p class="text-slate-600 mt-1">Gérez les catégories de produits</p>
+        </div>
+        <button onclick="openCategoryModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-semibold">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Ajouter Catégorie
+        </button>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6">
+        <div class="flex gap-4">
+            <div class="flex-1 relative">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input 
+                    type="text" 
+                    id="search-categories"
+                    placeholder="Rechercher une catégorie..." 
+                    class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onkeyup="searchCategories()"
+                >
+            </div>
+            <select id="filter-status" class="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="filterCategories()">
+                <option value="all">Tous les statuts</option>
+                <option value="active">Actives</option>
+                <option value="inactive">Inactives</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-slate-50 border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Catégorie</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Parent</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Produits</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Statut</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Date Création</th>
+                    <th class="px-6 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="categories-tbody" class="divide-y divide-slate-200">
+                {% for category in categories %}
+                <tr class="hover:bg-slate-50 transition-colors category-row" data-category-id="{{ category.id }}" data-status="{{ category.is_active|yesno:'active,inactive' }}">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            {% if category.image %}
+                            <img src="{{ category.image.url }}" alt="{{ category.name }}" class="w-10 h-10 rounded object-cover">
+                            {% else %}
+                            <div class="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                </svg>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="font-semibold text-slate-900">{{ category.name }}</div>
+                                {% if category.description %}
+                                <div class="text-sm text-slate-500">{{ category.description|truncatewords:10 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                        {% if category.parent %}
+                        <span class="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">{{ category.parent.name }}</span>
+                        {% else %}
+                        <span class="text-slate-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                            {{ category.product_set.count }} produits
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if category.is_active %}
+                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">Active</span>
+                        {% else %}
+                        <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-slate-600">
+                        {{ category.created_at|date:"d/m/Y" }}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="editCategory({{ category.id }})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Modifier">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="viewCategoryProducts({{ category.id }})" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Voir produits">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                </svg>
+                            </button>
+                            {% if user.role == 'admin' %}
+                            <button onclick="deleteCategory({{ category.id }}, '{{ category.name|escapejs }}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                        </svg>
+                        <p class="text-lg font-medium">Aucune catégorie</p>
+                        <p class="text-sm mt-1">Commencez par créer votre première catégorie</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Category Modal -->
+<div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <h2 id="modal-title" class="text-2xl font-bold text-slate-900">Ajouter une Catégorie</h2>
+            <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="category-form" class="p-6 space-y-6">
+            <input type="hidden" id="category-id" name="category_id">
+
+            <div class="grid grid-cols-2 gap-6">
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Nom de la catégorie *</label>
+                    <input 
+                        type="text" 
+                        id="category-name" 
+                        name="name"
+                        required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Ex: Électronique, Solaire, etc."
+                    >
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                    <textarea 
+                        id="category-description" 
+                        name="description"
+                        rows="3"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Description de la catégorie..."
+                    ></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Catégorie Parent</label>
+                    <select 
+                        id="category-parent" 
+                        name="parent"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">Aucune (catégorie principale)</option>
+                        {% for cat in categories %}
+                        {% if not cat.parent %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Statut</label>
+                    <select 
+                        id="category-status" 
+                        name="is_active"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                    </select>
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Image de la catégorie</label>
+                    <div class="flex items-center gap-4">
+                        <div id="image-preview" class="w-24 h-24 bg-slate-100 rounded-lg flex items-center justify-center overflow-hidden">
+                            <svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <input 
+                                type="file" 
+                                id="category-image" 
+                                name="image"
+                                accept="image/*"
+                                class="hidden"
+                                onchange="previewImage(event)"
+                            >
+                            <button type="button" onclick="document.getElementById('category-image').click()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors">
+                                Choisir une image
+                            </button>
+                            <p class="text-xs text-slate-500 mt-2">PNG, JPG jusqu'à 2MB</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4 border-t border-slate-200">
+                <button type="button" onclick="closeCategoryModal()" class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">
+                    Annuler
+                </button>
+                <button type="submit" class="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// CSRF Token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// Open modal
+function openCategoryModal() {
+    document.getElementById('modal-title').textContent = 'Ajouter une Catégorie';
+    document.getElementById('category-form').reset();
+    document.getElementById('category-id').value = '';
+    document.getElementById('image-preview').innerHTML = '<svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>';
+    document.getElementById('category-modal').classList.remove('hidden');
+}
+
+// Close modal
+function closeCategoryModal() {
+    document.getElementById('category-modal').classList.add('hidden');
+}
+
+// Preview image
+function previewImage(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('image-preview').innerHTML = `<img src="${e.target.result}" class="w-full h-full object-cover">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Submit form
+document.getElementById('category-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const categoryId = document.getElementById('category-id').value;
+    const url = categoryId ? `/categories/${categoryId}/update/` : '/categories/create/';
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            },
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast(categoryId ? 'Catégorie modifiée avec succès' : 'Catégorie créée avec succès', 'success');
+            closeCategoryModal();
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Erreur lors de l\'enregistrement', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Erreur de connexion', 'error');
+    }
+});
+
+// Edit category
+async function editCategory(id) {
+    try {
+        const response = await fetch(`/categories/${id}/`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const category = data.category;
+            document.getElementById('modal-title').textContent = 'Modifier la Catégorie';
+            document.getElementById('category-id').value = category.id;
+            document.getElementById('category-name').value = category.name;
+            document.getElementById('category-description').value = category.description || '';
+            document.getElementById('category-parent').value = category.parent_id || '';
+            document.getElementById('category-status').value = category.is_active ? 'true' : 'false';
+            
+            if (category.image) {
+                document.getElementById('image-preview').innerHTML = `<img src="${category.image}" class="w-full h-full object-cover">`;
+            }
+            
+            document.getElementById('category-modal').classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Erreur lors du chargement', 'error');
+    }
+}
+
+// Delete category
+async function deleteCategory(id, name) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${name}" ?\n\nCette action est irréversible.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/categories/${id}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showToast('Catégorie supprimée avec succès', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showToast(data.error || 'Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showToast('Erreur de connexion', 'error');
+    }
+}
+
+// View category products
+function viewCategoryProducts(id) {
+    window.location.href = `/products/?category=${id}`;
+}
+
+// Search categories
+function searchCategories() {
+    const query = document.getElementById('search-categories').value.toLowerCase();
+    const rows = document.querySelectorAll('.category-row');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+
+// Filter categories
+function filterCategories() {
+    const status = document.getElementById('filter-status').value;
+    const rows = document.querySelectorAll('.category-row');
+    
+    rows.forEach(row => {
+        const rowStatus = row.dataset.status;
+        row.style.display = (status === 'all' || status === rowStatus) ? '' : 'none';
+    });
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+    const colors = {
+        success: 'bg-green-500',
+        error: 'bg-red-500',
+        info: 'bg-blue-500'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fade-in`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Close modal on ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeCategoryModal();
+    }
+});
+</script>
+
+<style>
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+}
+</style>
+{% endblock %}

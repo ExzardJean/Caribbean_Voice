@@ -1,0 +1,318 @@
+{% extends 'dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white shadow-lg">
+        <h1 class="text-2xl font-bold mb-2">Bienvenue, {{ request.user.get_full_name|default:request.user.username }}!</h1>
+        <p class="text-blue-100">
+            Voici un aperçu de votre activité aujourd'hui. Gérez vos stocks et ventes efficacement.
+        </p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Visites/Ventes Card -->
+        <div class="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium opacity-90 mb-2">Ventes (30 jours)</p>
+                    <h3 class="text-3xl font-bold">{{ total_sales }}</h3>
+                    <div class="flex items-center gap-1 mt-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        <span class="text-sm">+2.5% depuis le mois dernier</span>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-white/20">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Revenue Card (Admin/Manager only) -->
+        {% if request.user.is_admin_or_manager %}
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium opacity-90 mb-2">Chiffre d'Affaires</p>
+                    <h3 class="text-3xl font-bold">{{ total_revenue|floatformat:0 }} HTG</h3>
+                    <div class="flex items-center gap-1 mt-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        <span class="text-sm">+19.2% depuis le mois dernier</span>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-white/20">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Customers Card -->
+        <div class="bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium opacity-90 mb-2">Clients</p>
+                    <h3 class="text-3xl font-bold">{{ total_customers }}</h3>
+                    <div class="flex items-center gap-1 mt-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                        </svg>
+                        <span class="text-sm">-2.2% depuis le mois dernier</span>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-white/20">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Card -->
+        <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-6 text-white shadow-lg">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-medium opacity-90 mb-2">Produits</p>
+                    <h3 class="text-3xl font-bold">{{ total_products }}</h3>
+                    <div class="flex items-center gap-1 mt-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        <span class="text-sm">+3.1% depuis le mois dernier</span>
+                    </div>
+                </div>
+                <div class="p-3 rounded-xl bg-white/20">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Stock Alerts -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                    Alertes de Stock
+                </h2>
+            </div>
+            <div class="p-6">
+                {% if recent_alerts %}
+                    <div class="space-y-3">
+                        {% for alert in recent_alerts %}
+                        <div class="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <div class="p-2 bg-orange-100 rounded-lg">
+                                    <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-900">{{ alert.product.name }}</p>
+                                    <p class="text-sm text-slate-600">
+                                        {% if alert.alert_type == 'out_of_stock' %}
+                                            Rupture de stock
+                                        {% elif alert.alert_type == 'low_stock' %}
+                                            Stock faible
+                                        {% else %}
+                                            Surstock
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="font-semibold text-orange-600">{{ alert.current_stock }} unités</p>
+                                <p class="text-xs text-slate-500">Seuil: {{ alert.threshold }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-8 text-slate-500">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p>Aucune alerte de stock</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+            <div class="p-6 border-b border-slate-200">
+                <h2 class="text-lg font-semibold text-slate-900">Statistiques Rapides</h2>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-slate-700">Total Produits</span>
+                    </div>
+                    <span class="text-lg font-bold text-blue-600">{{ total_products }}</span>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-slate-700">Total Clients</span>
+                    </div>
+                    <span class="text-lg font-bold text-green-600">{{ total_customers }}</span>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-orange-100 rounded-lg">
+                            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-slate-700">Stock Faible</span>
+                    </div>
+                    <span class="text-lg font-bold text-orange-600">{{ low_stock_count }}</span>
+                </div>
+
+                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            </svg>
+                        </div>
+                        <span class="text-sm font-medium text-slate-700">Ventes (30j)</span>
+                    </div>
+                    <span class="text-lg font-bold text-purple-600">{{ total_sales }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selling Products & Export -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-center p-6 border-b border-slate-200">
+            <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                </svg>
+                Produits les Plus Vendus
+            </h2>
+            <a href="{% url 'export_sales_excel' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v16h16V4H4zm4 4h8v8H8V8z"></path>
+                </svg>
+                Exporter Excel
+            </a>
+        </div>
+        <div class="p-6">
+            {% if top_products %}
+                <div class="overflow-x-auto mb-8">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="text-left py-3 px-4 text-sm font-semibold text-slate-700">Produit</th>
+                                <th class="text-right py-3 px-4 text-sm font-semibold text-slate-700">Quantité Vendue</th>
+                                {% if request.user.is_admin_or_manager %}
+                                <th class="text-right py-3 px-4 text-sm font-semibold text-slate-700">Revenu</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr class="border-b border-slate-100 hover:bg-slate-50">
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                                            {{ forloop.counter }}
+                                        </div>
+                                        <span class="font-medium text-slate-900">{{ product.product__name }}</span>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                                        {{ product.total_quantity }} unités
+                                    </span>
+                                </td>
+                                {% if request.user.is_admin_or_manager %}
+                                <td class="py-3 px-4 text-right">
+                                    <span class="font-semibold text-green-600">
+                                        {{ product.total_revenue|floatformat:0 }} HTG
+                                    </span>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Chart.js Graph -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <canvas id="topProductsChart" height="120"></canvas>
+                </div>
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script>
+                const ctx = document.getElementById('topProductsChart').getContext('2d');
+                const topProductsLabels = [{% for product in top_products %}'{{ product.product__name }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+                const topProductsData = [{% for product in top_products %}{{ product.total_quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: topProductsLabels,
+                        datasets: [{
+                            label: 'Quantité Vendue',
+                            data: topProductsData,
+                            backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                            borderColor: 'rgba(37, 99, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false },
+                            title: {
+                                display: true,
+                                text: 'Top 5 Produits Vendus'
+                            }
+                        },
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+                </script>
+            {% else %}
+                <div class="text-center py-8 text-slate-500">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    <p>Aucune donnée de vente disponible</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

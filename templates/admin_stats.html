@@ -1,0 +1,102 @@
+
+
+{% extends 'admin/base_site.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8">
+<h1 class="text-3xl font-bold mb-8 text-slate-800">Statistiques Générales</h1>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+    <div class="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+    <div class="mb-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7"/></svg></div>
+    <div class="text-2xl font-bold">{{ today_total|floatformat:2 }} HTG</div>
+    <div class="text-sm">Ventes du jour ({{ today_count }})</div>
+    </div>
+    <div class="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+    <div class="mb-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 0h6"/></svg></div>
+    <div class="text-2xl font-bold">{{ week_total|floatformat:2 }} HTG</div>
+    <div class="text-sm">Ventes semaine ({{ week_count }})</div>
+    </div>
+    <div class="bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+    <div class="mb-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1"/></svg></div>
+    <div class="text-2xl font-bold">{{ month_total|floatformat:2 }} HTG</div>
+    <div class="text-sm">Ventes mois ({{ month_count }})</div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+    <h2 class="font-semibold text-xl mb-4 text-slate-700">Top Produits Vendus</h2>
+    <canvas id="topProductsChart" height="180"></canvas>
+    <ul class="mt-4 text-slate-600">
+        {% for product in top_products %}
+        <li class="mb-1">• <span class="font-semibold">{{ product.name }}</span> — {{ product.sales|default:0 }} ventes</li>
+        {% empty %}
+        <li>Aucun produit vendu</li>
+        {% endfor %}
+    </ul>
+    </div>
+    <div class="bg-white rounded-xl shadow-lg p-6">
+    <h2 class="font-semibold text-xl mb-4 text-slate-700">Stock Critique</h2>
+    <ul class="text-slate-600">
+        {% for alert in alerts %}
+        <li class="mb-1">• <span class="font-semibold">{{ alert.product.name }}</span> — {{ alert.current_stock }} en stock</li>
+        {% empty %}
+        <li>Aucune alerte</li>
+        {% endfor %}
+    </ul>
+    </div>
+</div>
+
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Top produits chart
+const topProductsLabels = [{% for product in top_products %}'{{ product.name }}',{% endfor %}];
+const topProductsData = [{% for product in top_products %}{{ product.sales|default:0 }},{% endfor %}];
+const topProductsChart = new Chart(document.getElementById('topProductsChart'), {
+    type: 'bar',
+    data: {
+        labels: topProductsLabels,
+        datasets: [{
+            label: 'Ventes',
+            data: topProductsData,
+            backgroundColor: ['#2563EB', '#10B981', '#F59E0B', '#EF4444', '#0805daff'],
+            borderRadius: 8,
+            barPercentage: 0.6,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            title: { display: false }
+        },
+        scales: {
+            x: { grid: { display: false } },
+            y: { grid: { display: false }, beginAtZero: true }
+        }
+    }
+});
+
+// Pie chart ventes
+const salesPieChart = new Chart(document.getElementById('salesPieChart'), {
+    type: 'pie',
+    data: {
+        labels: ['Jour', 'Semaine', 'Mois'],
+        datasets: [{
+            data: [{{ today_total|floatformat:2 }}, {{ week_total|floatformat:2 }}, {{ month_total|floatformat:2 }}],
+            backgroundColor: ['#2563EB', '#10B981', '#8B5CF6'],
+            borderWidth: 2,
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' },
+            title: { display: false }
+        }
+    }
+});
+</script>
+{% endblock %}

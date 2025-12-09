@@ -1,0 +1,324 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Détails de la Vente #{{ sale.order_number }} - Caribbean Voice{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header with Actions -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Vente #{{ sale.order_number }}</h1>
+            <p class="text-gray-600">Détails complets de la commande</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="/sales/" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Retour
+            </a>
+            <button onclick="printInvoice()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                </svg>
+                Imprimer
+            </button>
+        </div>
+    </div>
+
+    <!-- Invoice Content (for printing) -->
+    <div id="invoiceContent" class="bg-white rounded-lg shadow-md p-8 mb-6">
+        <!-- Company Header -->
+        <div class="border-b-2 border-gray-300 pb-6 mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-3xl font-bold text-blue-600 mb-2">CARIBBEAN VOICE</h2>
+                    <p class="text-gray-600">Distribution de produits électroniques et solaires</p>
+                    <p class="text-gray-600">Port-au-Prince, Haïti</p>
+                    <p class="text-gray-600">Tél: +509 XXXX-XXXX</p>
+                    <p class="text-gray-600">Email: contact@caribbeanvoice.ht</p>
+                </div>
+                <div class="text-right">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">FACTURE</h3>
+                    <p class="text-gray-600">N° {{ sale.order_number }}</p>
+                    <p class="text-gray-600">Date: {{ sale.created_at|date:"d/m/Y" }}</p>
+                    <p class="text-gray-600">Heure: {{ sale.created_at|date:"H:i" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer & Sale Info -->
+        <div class="grid grid-cols-2 gap-6 mb-8">
+            <div>
+                <h4 class="font-bold text-gray-900 mb-3">INFORMATIONS CLIENT</h4>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    {% if sale.customer %}
+                        <p class="font-semibold text-gray-900">{{ sale.customer.first_name }}{% if sale.customer.last_name %} {{ sale.customer.last_name }}{% endif %}</p>
+                    {% else %}
+                        <p class="font-semibold text-red-600">Client supprimé</p>
+                    {% endif %}
+                    {% if sale.customer.phone %}
+                    <p class="text-gray-600"><span class="font-medium">Tél:</span> {{ sale.customer.phone }}</p>
+                    {% endif %}
+                    {% if sale.customer.email %}
+                    <p class="text-gray-600"><span class="font-medium">Email:</span> {{ sale.customer.email }}</p>
+                    {% endif %}
+                    {% if sale.customer.address %}
+                    <p class="text-gray-600"><span class="font-medium">Adresse:</span> {{ sale.customer.address }}</p>
+                    {% endif %}
+                    {% if sale.customer.customer_type == 'business' %}
+                    <p class="text-gray-600"><span class="font-medium">NIF:</span> {{ sale.customer.nif|default:"N/A" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <h4 class="font-bold text-gray-900 mb-3">DÉTAILS DE LA VENTE</h4>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="grid grid-cols-2 gap-2">
+                        <p class="text-gray-600 font-medium">Statut:</p>
+                        <p>
+                            {% if sale.status == 'completed' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Terminé</span>
+                            {% elif sale.status == 'pending' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">En attente</span>
+                            {% elif sale.status == 'confirmed' %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Confirmé</span>
+                            {% else %}
+                                <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">{{ sale.get_status_display }}</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-gray-600 font-medium">Paiement:</p>
+                        <p class="text-gray-900">{{ sale.get_payment_method_display }}</p>
+                        <p class="text-gray-600 font-medium">Vendeur:</p>
+                        <p class="text-gray-900">{{ sale.created_by.get_full_name|default:sale.created_by.username }}</p>
+                        {% if sale.cash_register %}
+                        <p class="text-gray-600 font-medium">Caisse:</p>
+                        <p class="text-gray-900">{{ sale.cash_register.name }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <div class="mb-8">
+            <h4 class="font-bold text-gray-900 mb-3">ARTICLES</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full border border-gray-300">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">#</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Produit</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-b">SKU</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Prix Unit.</th>
+                            <th class="px-4 py-3 text-center text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Qté</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Remise</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-700 uppercase tracking-wider border-b">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in sale.items.all %}
+                        <tr>
+                            <td class="px-4 py-3 text-sm text-gray-900 border-b">{{ forloop.counter }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 border-b">{{ item.product.name }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-600 font-mono border-b">{{ item.product.sku }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 text-right border-b">{{ item.unit_price|floatformat:2 }} HTG</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 text-center border-b">{{ item.quantity }}</td>
+                            <td class="px-4 py-3 text-sm text-gray-900 text-right border-b">{{ item.discount_amount|floatformat:2 }} HTG</td>
+                            <td class="px-4 py-3 text-sm font-semibold text-gray-900 text-right border-b">{{ item.total_price|floatformat:2 }} HTG</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="flex justify-end mb-8">
+            <div class="w-full md:w-1/2 lg:w-1/3">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="flex justify-between mb-3 pb-3 border-b border-gray-300">
+                        <span class="text-gray-600 font-medium">Sous-total:</span>
+                        <span class="text-gray-900 font-semibold">{{ sale.subtotal|floatformat:2 }} HTG</span>
+                    </div>
+                    {% if sale.discount_amount > 0 %}
+                    <div class="flex justify-between mb-3 pb-3 border-b border-gray-300">
+                        <span class="text-gray-600 font-medium">Remise:</span>
+                        <span class="text-red-600 font-semibold">-{{ sale.discount_amount|floatformat:2 }} HTG</span>
+                    </div>
+                    {% endif %}
+                    {% if sale.tax_amount > 0 %}
+                    <div class="flex justify-between mb-3 pb-3 border-b border-gray-300">
+                        <span class="text-gray-600 font-medium">Taxes:</span>
+                        <span class="text-gray-900 font-semibold">{{ sale.tax_amount|floatformat:2 }} HTG</span>
+                    </div>
+                    {% endif %}
+                    <div class="flex justify-between pt-3">
+                        <span class="text-xl font-bold text-gray-900">TOTAL:</span>
+                        <span class="text-2xl font-bold text-blue-600">{{ sale.total_amount|floatformat:2 }} HTG</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Info -->
+        {% if sale.payment_method == 'cash' and sale.amount_paid %}
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8">
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <p class="text-sm text-gray-600 font-medium">Montant payé:</p>
+                    <p class="text-lg font-bold text-gray-900">{{ sale.amount_paid|floatformat:2 }} HTG</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 font-medium">Monnaie rendue:</p>
+                    <p class="text-lg font-bold text-green-600">{{ sale.change_amount|floatformat:2 }} HTG</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600 font-medium">Mode de paiement:</p>
+                    <p class="text-lg font-bold text-gray-900">{{ sale.get_payment_method_display }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes -->
+        {% if sale.notes %}
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-8">
+            <h4 class="font-bold text-gray-900 mb-2">Notes:</h4>
+            <p class="text-gray-700">{{ sale.notes }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="border-t-2 border-gray-300 pt-6 text-center">
+            <p class="text-gray-600 mb-2">Merci pour votre confiance !</p>
+            <p class="text-sm text-gray-500">Cette facture est générée électroniquement et est valide sans signature.</p>
+            <p class="text-sm text-gray-500 mt-2">Caribbean Voice - Votre partenaire en électronique et énergie solaire</p>
+        </div>
+    </div>
+
+    <!-- Action Buttons (not printed) -->
+    <div class="no-print flex justify-center gap-4 mb-6">
+        {% if sale.status == 'pending' %}
+        <button onclick="confirmSale()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+            Confirmer la vente
+        </button>
+        {% endif %}
+        {% if sale.status != 'cancelled' and sale.status != 'refunded' %}
+        <button onclick="cancelSale()" class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+            Annuler la vente
+        </button>
+        {% endif %}
+        <button onclick="sendByEmail()" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors">
+            Envoyer par email
+        </button>
+    </div>
+</div>
+
+<style>
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        background: white;
+    }
+    
+    #invoiceContent {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 20px !important;
+    }
+    
+    /* Hide sidebar and header when printing */
+    aside, header, nav {
+        display: none !important;
+    }
+}
+</style>
+
+<script>
+function printInvoice() {
+    window.print();
+}
+
+function confirmSale() {
+    if (confirm('Confirmer cette vente ?')) {
+        fetch(`/api/sales/{{ sale.id }}/confirm/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Vente confirmée avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+
+function cancelSale() {
+    const reason = prompt('Raison de l\'annulation:');
+    if (reason) {
+        fetch(`/api/sales/{{ sale.id }}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Vente annulée avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+
+function sendByEmail() {
+    const email = prompt('Adresse email du client:', '{{ sale.customer.email|default:"" }}');
+    if (email) {
+        fetch(`/api/sales/{{ sale.id }}/send-email/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ email: email })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Facture envoyée par email avec succès !');
+            } else {
+                alert('Erreur: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,753 @@
+{% extends 'dashboard_base.html' %}
+
+{% block dashboard_content %}
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Gestion des Produits</h1>
+            <p class="text-slate-600 mt-1">Gérez votre inventaire de produits électroniques et solaires</p>
+        </div>
+        <button id="btnAddProduct" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            Ajouter un Produit
+        </button>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input 
+                        type="text" 
+                        id="searchInput"
+                        placeholder="Rechercher par nom, SKU ou code-barres..." 
+                        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+            </div>
+            <div class="w-full md:w-64">
+                <select id="categoryFilter" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Toutes les catégories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="w-full md:w-48">
+                <select id="statusFilter" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">Tous les statuts</option>
+                    <option value="in_stock">En stock</option>
+                    <option value="low_stock">Stock faible</option>
+                    <option value="out_of_stock">Rupture</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <!-- Products will be loaded here dynamically -->
+    </div>
+</div>
+
+<!-- Add/Edit Product Modal -->
+<div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <h2 id="modalTitle" class="text-xl font-bold text-slate-900">Ajouter un Produit</h2>
+            <button id="closeModal" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="productForm" class="p-6 space-y-6">
+            <input type="hidden" id="productId" name="id">
+            
+            <!-- Section 1: Informations de base -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Informations de base</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">SKU *</label>
+                        <input type="text" id="sku" name="sku" required 
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-slate-500 mt-1">Code unique du produit</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Code-barres</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="barcode" name="barcode" 
+                                class="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button type="button" id="generateBarcode" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200">
+                                Générer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Nom du produit *</label>
+                    <input type="text" id="name" name="name" required 
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                    <textarea id="description" name="description" rows="3"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Catégorie *</label>
+                        <select id="category" name="category" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Sélectionner...</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Type de produit *</label>
+                        <select id="product_type" name="product_type" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="electronics">Électronique</option>
+                            <option value="solar">Solaire</option>
+                            <option value="appliance">Électroménager</option>
+                            <option value="computer">Informatique</option>
+                            <option value="other">Autre</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Marque</label>
+                        <input type="text" id="brand" name="brand"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Modèle</label>
+                    <input type="text" id="model" name="model"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+
+            <!-- Section 2: Prix -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Prix et Remises</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Prix d'achat (HTG) *</label>
+                        <input type="number" id="cost_price" name="cost_price" step="0.01" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Prix de vente (HTG) *</label>
+                        <input type="number" id="selling_price" name="selling_price" step="0.01" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Remise (%)</label>
+                        <input type="number" id="discount_percent" name="discount_percent" min="0" max="100" value="0"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div id="marginDisplay" class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-slate-700">Marge bénéficiaire:</span>
+                        <span id="marginValue" class="text-lg font-bold text-blue-600">0 HTG (0%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Stock -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Gestion du Stock</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Stock actuel *</label>
+                        <input type="number" id="current_stock" name="current_stock" value="0" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Seuil minimum *</label>
+                        <input type="number" id="min_stock_level" name="min_stock_level" value="10" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Seuil maximum *</label>
+                        <input type="number" id="max_stock_level" name="max_stock_level" value="1000" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Point de réappro *</label>
+                        <input type="number" id="reorder_point" name="reorder_point" value="20" required
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 4: Garantie -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Garantie</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Durée de garantie (mois)</label>
+                        <input type="number" id="warranty_months" name="warranty_months" value="12"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Info garantie</label>
+                        <input type="text" id="warranty_info" name="warranty_info"
+                            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 5: Statut -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-semibold text-slate-900 border-b pb-2">Statut</h3>
+                
+                <div class="flex gap-6">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="is_active" name="is_active" checked
+                            class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-slate-700">Produit actif</span>
+                    </label>
+
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="is_featured" name="is_featured"
+                            class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                        <span class="text-sm font-medium text-slate-700">En vedette</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                <button type="button" id="cancelBtn" class="px-6 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                    Annuler
+                </button>
+                <button type="submit" id="saveBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Product Modal -->
+<div id="viewProductModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-slate-900">Détails du Produit</h2>
+            <button id="closeViewModal" class="text-slate-400 hover:text-slate-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <div id="viewProductContent" class="p-6">
+            <!-- Product details will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transform translate-y-20 transition-transform duration-300 z-50">
+    <p id="toastMessage" class="text-white font-medium"></p>
+</div>
+
+<script>
+// Global variables
+let allProducts = [];
+let currentEditId = null;
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadProducts();
+    initializeEventListeners();
+});
+
+// Initialize event listeners
+function initializeEventListeners() {
+    // Add product button
+    document.getElementById('btnAddProduct').addEventListener('click', () => openProductModal());
+    
+    // Close modal buttons
+    document.getElementById('closeModal').addEventListener('click', closeProductModal);
+    document.getElementById('cancelBtn').addEventListener('click', closeProductModal);
+    document.getElementById('closeViewModal').addEventListener('click', closeViewProductModal);
+    
+    // Form submit
+    document.getElementById('productForm').addEventListener('submit', handleFormSubmit);
+    
+    // Search and filters
+    document.getElementById('searchInput').addEventListener('input', filterProducts);
+    document.getElementById('categoryFilter').addEventListener('change', filterProducts);
+    document.getElementById('statusFilter').addEventListener('change', filterProducts);
+    
+    // Generate barcode
+    document.getElementById('generateBarcode').addEventListener('click', generateBarcode);
+    
+    // Calculate margin on price change
+    document.getElementById('cost_price').addEventListener('input', calculateMargin);
+    document.getElementById('selling_price').addEventListener('input', calculateMargin);
+    document.getElementById('discount_percent').addEventListener('input', calculateMargin);
+}
+
+// Load products from server
+async function loadProducts() {
+    try {
+        const response = await fetch('/api/products/');
+        if (!response.ok) throw new Error('Erreur de chargement');
+        
+        const data = await response.json();
+        allProducts = data.products || [];
+        renderProducts(allProducts);
+    } catch (error) {
+        console.error('Error loading products:', error);
+        showToast('Erreur lors du chargement des produits', 'error');
+    }
+}
+
+// Render products grid
+function renderProducts(products) {
+    const grid = document.getElementById('productsGrid');
+    
+    if (products.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full bg-white rounded-xl shadow-sm border border-slate-200 p-12 text-center">
+                <svg class="w-16 h-16 mx-auto mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                </svg>
+                <h3 class="text-lg font-semibold text-slate-900 mb-2">Aucun produit trouvé</h3>
+                <p class="text-slate-600 mb-4">Commencez par ajouter votre premier produit</p>
+                <button onclick="openProductModal()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Ajouter un Produit
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = products.map(product => `
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
+            <div class="h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+                ${product.main_image ? 
+                    `<img src="${product.main_image}" alt="${product.name}" class="w-full h-full object-cover">` :
+                    `<svg class="w-20 h-20 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>`
+                }
+            </div>
+            
+            <div class="p-4">
+                <div class="flex items-start justify-between mb-2">
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-slate-900 mb-1">${product.name}</h3>
+                        <p class="text-sm text-slate-600">SKU: ${product.sku}</p>
+                    </div>
+                    ${getStockBadge(product.stock_status)}
+                </div>
+                
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">${product.category_name}</span>
+                    <span class="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded capitalize">${product.product_type_display}</span>
+                </div>
+                
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <p class="text-sm text-slate-600">Prix de vente</p>
+                        <p class="text-lg font-bold text-blue-600">${parseFloat(product.selling_price).toFixed(2)} HTG</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-slate-600">Stock</p>
+                        <p class="text-lg font-bold text-slate-900">${product.current_stock}</p>
+                    </div>
+                </div>
+                
+                ${product.discount_percent > 0 ? `
+                    <div class="mb-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <p class="text-sm text-green-700 font-medium">
+                            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            Remise ${product.discount_percent}%
+                        </p>
+                    </div>
+                ` : ''}
+                
+                <div class="flex gap-2">
+                    <button onclick="openProductModal(${product.id})" class="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                        Modifier
+                    </button>
+                    <button onclick="viewProduct(${product.id})" class="px-3 py-2 bg-slate-100 text-slate-700 text-sm rounded-lg hover:bg-slate-200 transition-colors" title="Voir détails">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </button>
+                    <button onclick="deleteProduct(${product.id}, '${product.name}')" class="px-3 py-2 bg-red-100 text-red-700 text-sm rounded-lg hover:bg-red-200 transition-colors" title="Supprimer">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Get stock status badge
+function getStockBadge(status) {
+    const badges = {
+        'out_of_stock': '<span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded">Rupture</span>',
+        'low_stock': '<span class="px-2 py-1 text-xs font-medium bg-orange-100 text-orange-700 rounded">Bas</span>',
+        'in_stock': '<span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded">En stock</span>',
+        'overstock': '<span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded">Surstock</span>'
+    };
+    return badges[status] || badges['in_stock'];
+}
+
+// Filter products
+function filterProducts() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const categoryId = document.getElementById('categoryFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    let filtered = allProducts;
+    
+    if (searchTerm) {
+        filtered = filtered.filter(p => 
+            p.name.toLowerCase().includes(searchTerm) ||
+            p.sku.toLowerCase().includes(searchTerm) ||
+            (p.barcode && p.barcode.toLowerCase().includes(searchTerm))
+        );
+    }
+    
+    if (categoryId) {
+        filtered = filtered.filter(p => p.category == categoryId);
+    }
+    
+    if (status) {
+        filtered = filtered.filter(p => p.stock_status === status);
+    }
+    
+    renderProducts(filtered);
+}
+
+// Open product modal
+async function openProductModal(productId = null) {
+    currentEditId = productId;
+    const modal = document.getElementById('productModal');
+    const form = document.getElementById('productForm');
+    const title = document.getElementById('modalTitle');
+    
+    form.reset();
+    
+    if (productId) {
+        title.textContent = 'Modifier le Produit';
+        // Load product data
+        try {
+            const response = await fetch(`/api/products/${productId}/`);
+            if (!response.ok) throw new Error('Erreur de chargement');
+            
+            const product = await response.json();
+            
+            // Fill form with product data
+            Object.keys(product).forEach(key => {
+                const input = document.getElementById(key);
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = product[key];
+                    } else {
+                        input.value = product[key] || '';
+                    }
+                }
+            });
+            
+            calculateMargin();
+        } catch (error) {
+            console.error('Error loading product:', error);
+            showToast('Erreur lors du chargement du produit', 'error');
+            return;
+        }
+    } else {
+        title.textContent = 'Ajouter un Produit';
+        // Generate SKU automatically
+        document.getElementById('sku').value = generateSKU();
+    }
+    
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+// Close product modal
+function closeProductModal() {
+    const modal = document.getElementById('productModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    currentEditId = null;
+}
+
+// Handle form submit
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = {};
+    
+    formData.forEach((value, key) => {
+        if (key === 'is_active' || key === 'is_featured') {
+            data[key] = document.getElementById(key).checked;
+        } else {
+            data[key] = value;
+        }
+    });
+    
+    try {
+        const url = currentEditId ? `/api/products/${currentEditId}/` : '/api/products/create/';
+        const method = currentEditId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erreur lors de l\'enregistrement');
+        }
+        
+        showToast(currentEditId ? 'Produit modifié avec succès' : 'Produit créé avec succès', 'success');
+        closeProductModal();
+        loadProducts();
+    } catch (error) {
+        console.error('Error saving product:', error);
+        showToast(error.message, 'error');
+    }
+}
+
+// View product details
+async function viewProduct(productId) {
+    try {
+        const response = await fetch(`/api/products/${productId}/`);
+        if (!response.ok) throw new Error('Erreur de chargement');
+        
+        const product = await response.json();
+        
+        const content = document.getElementById('viewProductContent');
+        content.innerHTML = `
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-slate-600">SKU</p>
+                        <p class="font-semibold">${product.sku}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Code-barres</p>
+                        <p class="font-semibold">${product.barcode || 'N/A'}</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-sm text-slate-600">Nom</p>
+                    <p class="font-semibold text-lg">${product.name}</p>
+                </div>
+                
+                <div>
+                    <p class="text-sm text-slate-600">Description</p>
+                    <p>${product.description || 'Aucune description'}</p>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-sm text-slate-600">Prix d'achat</p>
+                        <p class="font-semibold text-lg">${parseFloat(product.cost_price).toFixed(2)} HTG</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Prix de vente</p>
+                        <p class="font-semibold text-lg text-blue-600">${parseFloat(product.selling_price).toFixed(2)} HTG</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Remise</p>
+                        <p class="font-semibold text-lg">${product.discount_percent}%</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-sm text-slate-600">Stock actuel</p>
+                        <p class="font-semibold text-lg">${product.current_stock}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Seuil min</p>
+                        <p class="font-semibold">${product.min_stock_level}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Seuil max</p>
+                        <p class="font-semibold">${product.max_stock_level}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Point réappro</p>
+                        <p class="font-semibold">${product.reorder_point}</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-slate-600">Garantie</p>
+                        <p class="font-semibold">${product.warranty_months} mois</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600">Statut</p>
+                        <p class="font-semibold">${product.is_active ? 'Actif' : 'Inactif'}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('viewProductModal').classList.remove('hidden');
+        document.getElementById('viewProductModal').classList.add('flex');
+    } catch (error) {
+        console.error('Error viewing product:', error);
+        showToast('Erreur lors du chargement des détails', 'error');
+    }
+}
+
+// Close view product modal
+function closeViewProductModal() {
+    const modal = document.getElementById('viewProductModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Delete product
+async function deleteProduct(productId, productName) {
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le produit "${productName}" ?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/products/${productId}/`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        if (!response.ok) throw new Error('Erreur lors de la suppression');
+        
+        showToast('Produit supprimé avec succès', 'success');
+        loadProducts();
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        showToast('Erreur lors de la suppression', 'error');
+    }
+}
+
+// Generate SKU
+function generateSKU() {
+    const prefix = 'PRD';
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    return `${prefix}-${timestamp}-${random}`;
+}
+
+// Generate barcode
+function generateBarcode() {
+    const barcode = Math.floor(Math.random() * 9000000000000) + 1000000000000;
+    document.getElementById('barcode').value = barcode.toString();
+}
+
+// Calculate margin
+function calculateMargin() {
+    const costPrice = parseFloat(document.getElementById('cost_price').value) || 0;
+    const sellingPrice = parseFloat(document.getElementById('selling_price').value) || 0;
+    const discountPercent = parseFloat(document.getElementById('discount_percent').value) || 0;
+    
+    const finalPrice = sellingPrice * (1 - discountPercent / 100);
+    const margin = finalPrice - costPrice;
+    const marginPercent = costPrice > 0 ? (margin / costPrice * 100) : 0;
+    
+    const marginDisplay = document.getElementById('marginValue');
+    marginDisplay.textContent = `${margin.toFixed(2)} HTG (${marginPercent.toFixed(1)}%)`;
+    
+    if (margin < 0) {
+        marginDisplay.classList.add('text-red-600');
+        marginDisplay.classList.remove('text-blue-600', 'text-green-600');
+    } else if (marginPercent < 20) {
+        marginDisplay.classList.add('text-orange-600');
+        marginDisplay.classList.remove('text-blue-600', 'text-green-600', 'text-red-600');
+    } else {
+        marginDisplay.classList.add('text-green-600');
+        marginDisplay.classList.remove('text-blue-600', 'text-red-600', 'text-orange-600');
+    }
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastMessage.textContent = message;
+    
+    if (type === 'success') {
+        toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg bg-green-600 transform transition-transform duration-300 z-50';
+    } else {
+        toast.className = 'fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg bg-red-600 transform transition-transform duration-300 z-50';
+    }
+    
+    toast.style.transform = 'translateY(0)';
+    
+    setTimeout(() => {
+        toast.style.transform = 'translateY(120%)';
+    }, 3000);
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

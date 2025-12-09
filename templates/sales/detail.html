@@ -1,0 +1,144 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<style>
+@media print {
+    body, html {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+        font-size: 12px;
+        background: #fff;
+    }
+    .receipt {
+        width: 80mm;
+        margin: 0 auto;
+        padding: 0;
+        background: #fff;
+    }
+    .no-print {
+        display: none !important;
+    }
+}
+.receipt {
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+}
+.receipt-header {
+    text-align: center;
+    margin-bottom: 8px;
+}
+.receipt-logo {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 6px;
+}
+.receipt-info {
+    text-align: center;
+    margin-bottom: 8px;
+    color: #444;
+    font-size: 12px;
+}
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+.receipt-table th, .receipt-table td {
+    border-bottom: 1px solid #eee;
+    padding: 4px 2px;
+    font-size: 12px;
+}
+.receipt-table th {
+    background: #f8f8f8;
+    font-weight: bold;
+}
+.receipt-totals {
+    margin-top: 8px;
+    font-size: 13px;
+}
+.receipt-totals .label {
+    font-weight: bold;
+}
+.receipt-footer {
+    text-align: center;
+    margin-top: 10px;
+    font-size: 12px;
+}
+.receipt-footer .priority {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+.receipt-actions {
+    text-align: center;
+    margin-top: 12px;
+}
+.receipt-actions a, .receipt-actions button {
+    color: #1976d2;
+    background: none;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-bottom: 8px;
+}
+</style>
+<div class="receipt">
+    <div class="receipt-header">
+        <img src="/static/logo.png" alt="Logo" class="receipt-logo">
+        <div class="receipt-info">
+            <strong>FADHRIS</strong><br>
+            8, Rue Balmyr, Delmas 83<br>
+            bureaucommunicationfadhiris@gmail.com<br>
+            +509 37526310 | +509 37060860 | +509 37945068
+        </div>
+    </div>
+    <table style="width:100%; margin-bottom:8px; font-size:12px;">
+        <tr>
+            <td>Facture N°:&nbsp;<strong>{{ sale.order_number|default:'-' }}</strong></td>
+            <td>Date:&nbsp;<strong>{{ sale.created_at|date:'d/m/Y H:i' }}</strong></td>
+        </tr>
+        <tr>
+            <td>Caissier(ère):&nbsp;<strong>{{ sale.created_by.username|default:'-' }}</strong></td>
+            <td>Client:&nbsp;<strong>{% if sale.customer %}{{ sale.customer.first_name }}{% if sale.customer.last_name %} {{ sale.customer.last_name }}{% endif %}{% else %}Client supprimé{% endif %}</strong></td>
+        </tr>
+    </table>
+    <table class="receipt-table">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th>Qté</th>
+                <th>Prix</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in sale.items.all %}
+            <tr>
+                <td>{{ item.product.name }}</td>
+                <td style="text-align:center;">{{ item.quantity }}</td>
+                <td style="text-align:right;">{{ item.unit_price|floatformat:2 }}</td>
+                <td style="text-align:right;">{{ item.total_price|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="receipt-totals">
+        <div><span class="label">Total à payer :</span> <span style="color:#1976d2; font-weight:bold;">{{ sale.total_amount|floatformat:2 }} HTG</span></div>
+        <div>Montant payé : <span style="font-weight:bold;">{{ sale.paid_amount|floatformat:2 }} HTG</span></div>
+    </div>
+    <div class="receipt-footer">
+        <div class="priority">Votre santé est notre priorité!</div>
+    </div>
+    <div class="receipt-actions no-print">
+        <button onclick="window.print()">Imprimer la facture</button>
+        <br>
+        <a href="/sales/">&#8592; Nouvelle vente</a>
+    </div>
+</div>
+{% endblock %}

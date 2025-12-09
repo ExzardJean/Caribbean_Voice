@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-lg mt-8 print:shadow-none print:mt-0">
+    <div class="text-center mb-4">
+        <h2 class="text-xl font-bold text-slate-900">Proformat / Devis</h2>
+        <p class="text-slate-600 text-sm">{{ proforma.created_at|date:'d/m/Y H:i' }}</p>
+        <p class="text-slate-600 text-sm">N° Proformat : {{ proforma.proforma_number }}</p>
+        <p class="text-slate-600 text-sm">Valide jusqu'au : {{ proforma.valid_until|date:'d/m/Y' }}</p>
+    </div>
+    <div class="mb-4">
+        <p class="font-semibold">Client : {{ proforma.customer.first_name }} {{ proforma.customer.last_name }}</p>
+        <p class="text-sm text-slate-500">Téléphone : {{ proforma.customer.phone }}</p>
+    </div>
+    <table class="w-full text-sm mb-4">
+        <thead>
+            <tr class="border-b">
+                <th class="text-left py-2">Produit</th>
+                <th class="text-right py-2">Qté</th>
+                <th class="text-right py-2">Prix</th>
+                <th class="text-right py-2">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in proforma.items.all %}
+            <tr>
+                <td class="py-1">{{ item.product.name }}</td>
+                <td class="py-1 text-right">{{ item.quantity }}</td>
+                <td class="py-1 text-right">{{ item.unit_price|floatformat:2 }} HTG</td>
+                <td class="py-1 text-right">{{ item.total_price|floatformat:2 }} HTG</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="flex justify-between font-semibold border-t pt-2">
+        <span>Total :</span>
+        <span>{{ proforma.total_amount|floatformat:2 }} HTG</span>
+    </div>
+    <div class="flex justify-between text-sm mt-1">
+        <span>Remise :</span>
+        <span>{{ proforma.discount_amount|floatformat:2 }} HTG</span>
+    </div>
+    <div class="flex justify-between text-sm mt-1">
+        <span>Taxe :</span>
+        <span>{{ proforma.tax_amount|floatformat:2 }} HTG</span>
+    </div>
+    <div class="mt-6 text-center">
+        <button onclick="window.print()" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 print:hidden">Imprimer le proformat</button>
+    </div>
+    <div class="mt-4 text-xs text-slate-500">
+        <strong>Conditions :</strong> {{ proforma.terms_conditions }}
+    </div>
+</div>
+{% endblock %}

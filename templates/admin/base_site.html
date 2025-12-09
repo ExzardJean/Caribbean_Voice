@@ -1,0 +1,11 @@
+{% extends "admin/base.html" %}
+
+{% block sidebar %}
+    {{ block.super }}
+    <div class="p-4">
+        <a href="/admin/stats/" class="block px-4 py-2 mt-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+            <svg class="inline w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 0h6"></path></svg>
+            Statistiques Admin
+        </a>
+    </div>
+{% endblock %}

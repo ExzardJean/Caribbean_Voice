@@ -1,0 +1,9 @@
+{% extends 'dashboard_base.html' %}
+{% block content %}
+<h1>Liste des ventes</h1>
+<ul>
+    {% for sale in sales %}
+    <li>Vente #{{ sale.id }} - Client: {% if sale.customer %}{{ sale.customer.first_name }}{% if sale.customer.last_name %} {{ sale.customer.last_name }}{% endif %}{% else %}Client supprimé{% endif %}</li>
+    {% endfor %}
+</ul>
+{% endblock %}
