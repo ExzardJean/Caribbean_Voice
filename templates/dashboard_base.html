@@ -1,7 +1,8 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50">
+<div class="min-h-screen bg-slate-50 animate-fade-up">
     <!-- Toast Notification -->
     <div id="toast" class="fixed top-6 right-6 z-50 hidden px-6 py-4 bg-blue-600 text-white rounded-lg shadow-lg text-lg font-semibold transition-all duration-300"></div>
     <!-- Sidebar -->
@@ -9,10 +10,8 @@
         <div class="h-full flex flex-col">
             <!-- Logo -->
             <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
-                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
+                <div class="">
+                    <img src="{% static 'images/caribbean_voice.jpg' %}" alt="Caribbean Voice Logo" class="w-6 h-6">
                 </div>
                 <span class="text-white font-bold text-lg">Caribbean Voice</span>
             </div>
@@ -20,13 +19,13 @@
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
                 <div class="text-slate-400 text-xs font-semibold uppercase px-3 mb-2">Menu Principal</div>
-
+                {% comment %} 
                 <a href="/admin/inventory/salesorder/stats/" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-slate-300 hover:bg-slate-800 hover:text-white">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 012-2h2a2 2 0 012 2v6m-6 0h6"></path>
                     </svg>
                     <span class="text-sm font-medium">Statistiques Admin</span>
-                </a>
+                </a> {% endcomment %}
                 
                 <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'dashboard' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +120,6 @@
 
     <!-- Main Content -->
     <div class="lg:ml-64 transition-all duration-300">
-        <!-- Top Bar -->
         <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
             <div class="flex items-center justify-between px-4 lg:px-6 py-4">
                 <div class="flex items-center gap-4">
@@ -166,12 +164,21 @@
         </main>
     </div>
 
+<style>
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+    animation: fade-up 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+</style>
 <script>
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         sidebar.classList.toggle('-translate-x-full');
     }
-    // Fonction pour afficher une notification toast
+    
     function showToast(message, color = 'bg-blue-600') {
         const toast = document.getElementById('toast');
         toast.textContent = message;
@@ -181,6 +188,5 @@
             toast.style.display = 'none';
         }, 3000);
     }
-    // Exemple d'utilisation : showToast('Action réussie !');
 </script>
 {% endblock %}

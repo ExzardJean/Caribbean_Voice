@@ -1,3 +1,25 @@
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from .models import CashRegisterSettings
+from django.contrib.auth.decorators import login_required
+
+# Vue pour changer le mot de passe de la caisse
+@login_required
+def change_cash_register_password(request):
+    settings_obj, _ = CashRegisterSettings.objects.get_or_create(id=1)
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+        if not new_password:
+            messages.error(request, "Le nouveau mot de passe ne peut pas être vide.")
+        elif new_password != confirm_password:
+            messages.error(request, "Les mots de passe ne correspondent pas.")
+        else:
+            settings_obj.password = new_password
+            settings_obj.save()
+            messages.success(request, "Mot de passe de la caisse mis à jour avec succès.")
+            return redirect('pos')
+    return render(request, 'change_cash_register_password.html', {'settings': settings_obj})
 from django.contrib.auth.decorators import login_required
 # Vue pour afficher/imprimer le proformat
 @login_required
@@ -701,20 +723,25 @@ def open_cash_register(request):
         }, status=400)
     
     try:
+        from .models import CashRegisterSettings
         data = json.loads(request.body)
-        opening_balance = Decimal(str(data.get('opening_balance', 0)))
-        
+        password = data.get('password', '')
+        # Récupérer le mot de passe stocké (un seul objet attendu)
+        settings_obj = CashRegisterSettings.objects.first()
+        expected_password = settings_obj.password if settings_obj else '1234'
+        if not password or password != expected_password:
+            return JsonResponse({'error': 'Mot de passe incorrect'}, status=403)
+        # Ouvre la caisse avec un solde initial à 0 (ou adaptez selon besoin)
+        opening_balance = 0
         cash_register = CashRegister.objects.create(
             cashier=request.user,
             opening_balance=opening_balance,
             expected_balance=opening_balance
         )
-        
         return JsonResponse({
             'success': True,
             'register_id': cash_register.id
         })
-        
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -731,8 +758,17 @@ def close_cash_register(request):
     
     try:
         data = json.loads(request.body)
-        actual_balance = Decimal(str(data.get('actual_balance', 0)))
-        notes = data.get('notes', '')
+        # Si aucun montant n'est envoyé, on ferme avec le montant attendu
+        cash_register = CashRegister.objects.filter(
+            cashier=request.user,
+            status='open'
+        ).first()
+        if not cash_register:
+            return JsonResponse({
+                'error': 'Aucune caisse ouverte'
+            }, status=400)
+        actual_balance = cash_register.expected_balance
+        notes = ''
         
         cash_register = CashRegister.objects.filter(
             cashier=request.user,

@@ -4,6 +4,18 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 
+class CashRegisterSettings(models.Model):
+    """Paramètres de la caisse, dont le mot de passe d'ouverture."""
+    password = models.CharField(max_length=128, default='1234')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Paramètre de caisse'
+        verbose_name_plural = 'Paramètres de caisse'
+
+    def __str__(self):
+        return f"Paramètres caisse (modifié le {self.updated_at.strftime('%d/%m/%Y %H:%M')})"
+
 # Custom User Model with roles
 class User(AbstractUser):
     ROLE_CHOICES = (

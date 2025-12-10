@@ -155,14 +155,15 @@ def product_detail_api(request, product_id):
 @require_http_methods(["POST"])
 def product_create_api(request):
     """API pour créer un nouveau produit"""
-    if not request.user.is_admin_or_manager():
-        return JsonResponse({
-            'success': False,
-            'error': 'Permission refusée'
-        }, status=403)
+    # Autoriser tous les utilisateurs connectés à ajouter un produit
     
     try:
-        data = json.loads(request.body)
+        if request.content_type.startswith('multipart/form-data'):
+            data = request.POST
+            files = request.FILES
+        else:
+            data = json.loads(request.body)
+            files = None
         
         # Validate required fields
         required_fields = ['sku', 'name', 'category', 'cost_price', 'selling_price', 'product_type']
@@ -200,6 +201,11 @@ def product_create_api(request):
         initial_stock = int(data.get('current_stock', 0))
         
         # Create product
+        def parse_bool(val, default=False):
+            if val in [True, 'on', 'true', 'True', 1, '1']:
+                return True
+            return False if val not in [None, ''] else default
+
         product = Product.objects.create(
             sku=data['sku'],
             barcode=data.get('barcode', '').strip() or None,
@@ -218,10 +224,14 @@ def product_create_api(request):
             reorder_point=int(data.get('reorder_point', 20)),
             warranty_months=int(data.get('warranty_months', 12)),
             warranty_info=data.get('warranty_info', ''),
-            is_active=data.get('is_active', True),
-            is_featured=data.get('is_featured', False),
+            is_active=parse_bool(data.get('is_active', True), True),
+            is_featured=parse_bool(data.get('is_featured', False), False),
             created_by=request.user
         )
+        # Ajout de l'image principale si présente
+        if files and files.get('main_image'):
+            product.main_image = files['main_image']
+            product.save()
         
         # Create initial stock movement if stock > 0
         if initial_stock > 0:
@@ -248,6 +258,9 @@ def product_create_api(request):
         }, status=400)
     
     except Exception as e:
+        import traceback
+        print('Erreur lors de la création du produit:')
+        traceback.print_exc()
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -255,16 +268,22 @@ def product_create_api(request):
 
 
 def product_update_api(request, product_id):
-    """API pour modifier un produit"""
-    if not request.user.is_admin_or_manager():
-        return JsonResponse({
-            'success': False,
-            'error': 'Permission refusée'
-        }, status=403)
-    
     try:
         product = Product.objects.get(id=product_id)
-        data = json.loads(request.body)
+        if request.method == 'PUT' and request.content_type.startswith('multipart/form-data'):
+            # Utilise MultiPartParser pour parser le body PUT
+            from django.http.multipartparser import MultiPartParser
+            from django.core.files.uploadhandler import MemoryFileUploadHandler, TemporaryFileUploadHandler
+            request.upload_handlers = [MemoryFileUploadHandler(request), TemporaryFileUploadHandler(request)]
+            parser = MultiPartParser(request.META, request, request.upload_handlers)
+            data, files = parser.parse()
+            data = data.copy()  # QueryDict
+        elif request.content_type.startswith('multipart/form-data'):
+            data = request.POST
+            files = request.FILES
+        else:
+            data = json.loads(request.body)
+            files = None
         
         # Check if SKU is being changed and if it already exists
         if data.get('sku') and data['sku'] != product.sku:
@@ -300,40 +319,40 @@ def product_update_api(request, product_id):
         new_stock = int(data.get('current_stock', product.current_stock))
         stock_changed = old_stock != new_stock
         
-        # Update fields
-        if data.get('name'):
-            product.name = data['name']
-        if 'description' in data:
-            product.description = data['description']
-        if data.get('product_type'):
-            product.product_type = data['product_type']
-        if 'brand' in data:
-            product.brand = data['brand']
-        if 'model' in data:
-            product.model = data['model']
-        if data.get('cost_price'):
-            product.cost_price = Decimal(str(data['cost_price']))
-        if data.get('selling_price'):
-            product.selling_price = Decimal(str(data['selling_price']))
+        # Update fields (accept empty values)
+        for field in [
+            'name', 'description', 'product_type', 'brand', 'model', 'warranty_info'
+        ]:
+            if field in data:
+                setattr(product, field, data[field])
+        if 'cost_price' in data:
+            product.cost_price = Decimal(str(data['cost_price'])) if data['cost_price'] != '' else Decimal('0')
+        if 'selling_price' in data:
+            product.selling_price = Decimal(str(data['selling_price'])) if data['selling_price'] != '' else Decimal('0')
         if 'discount_percent' in data:
-            product.discount_percent = int(data['discount_percent'])
+            product.discount_percent = int(data['discount_percent']) if data['discount_percent'] != '' else 0
         if 'current_stock' in data:
             product.current_stock = new_stock
         if 'min_stock_level' in data:
-            product.min_stock_level = int(data['min_stock_level'])
+            product.min_stock_level = int(data['min_stock_level']) if data['min_stock_level'] != '' else 0
         if 'max_stock_level' in data:
-            product.max_stock_level = int(data['max_stock_level'])
+            product.max_stock_level = int(data['max_stock_level']) if data['max_stock_level'] != '' else 0
         if 'reorder_point' in data:
-            product.reorder_point = int(data['reorder_point'])
+            product.reorder_point = int(data['reorder_point']) if data['reorder_point'] != '' else 0
         if 'warranty_months' in data:
-            product.warranty_months = int(data['warranty_months'])
-        if 'warranty_info' in data:
-            product.warranty_info = data['warranty_info']
+            product.warranty_months = int(data['warranty_months']) if data['warranty_months'] != '' else 0
+        def parse_bool(val, default=False):
+            if val in [True, 'on', 'true', 'True', 1, '1']:
+                return True
+            return False if val not in [None, ''] else default
         if 'is_active' in data:
-            product.is_active = data['is_active']
+            product.is_active = parse_bool(data['is_active'], True)
         if 'is_featured' in data:
-            product.is_featured = data['is_featured']
-        
+            product.is_featured = parse_bool(data['is_featured'], False)
+        # Ajout ou modification de l'image principale si présente
+        if files and files.get('main_image'):
+            product.main_image = files['main_image']
+        # Si aucune nouvelle image n'est envoyée, on ne modifie pas le champ main_image
         product.save()
         
         # Create stock movement if stock changed
@@ -358,14 +377,17 @@ def product_update_api(request, product_id):
             'success': False,
             'error': 'Produit non trouvé'
         }, status=404)
-    
+
     except json.JSONDecodeError:
         return JsonResponse({
             'success': False,
             'error': 'Données JSON invalides'
         }, status=400)
-    
+
     except Exception as e:
+        import traceback
+        print('Erreur lors de la modification du produit:')
+        traceback.print_exc()
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -464,6 +486,7 @@ def product_search_api(request):
                 'discount_percent': product.discount_percent,
                 'current_stock': product.current_stock,
                 'stock_status': stock_status,
+                'main_image': product.main_image.url if product.main_image else None,
             })
         
         return JsonResponse({

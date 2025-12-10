@@ -1,3 +1,4 @@
+
 """
 URL configuration for caribbean_stock project.
 
@@ -38,6 +39,7 @@ urlpatterns = [
     # Authentication
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+     path('pos/change-cash-register-password/', views.change_cash_register_password, name='change_cash_register_password'),
 
     # Password reset
     path('password_reset/', CustomPasswordResetView.as_view(), name='password_reset'),
@@ -69,6 +71,7 @@ urlpatterns = [
     path('pos/search/', views.pos_search_products, name='pos_search'),
      # Products
      path('products/', include('products.urls')),
+    path('pos/open-register/', views.open_cash_register, name='open_cash_register'),
     path('pos/close-register/', views.close_cash_register, name='close_cash_register'),
     path('pos/create-proforma/', views.create_proforma, name='create_proforma'),
     path('pos/convert-proforma/<int:proforma_id>/', views.convert_proforma_to_sale, name='convert_proforma'),

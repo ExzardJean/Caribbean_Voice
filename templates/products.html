@@ -69,7 +69,7 @@
             </button>
         </div>
 
-        <form id="productForm" class="p-6 space-y-6">
+        <form id="productForm" class="p-6 space-y-6" enctype="multipart/form-data">
             <input type="hidden" id="productId" name="id">
             
             <!-- Section 1: Informations de base -->
@@ -102,10 +102,17 @@
                         class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
+
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">Description</label>
                     <textarea id="description" name="description" rows="3"
                         class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Photo du produit (optionnel)</label>
+                    <input type="file" id="main_image" name="main_image" accept="image/*"
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -356,8 +363,8 @@ function renderProducts(products) {
     }
     
     grid.innerHTML = products.map(product => `
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-            <div class="h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
+        <div class="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow flex flex-col h-full animate-fade-up">
+            <div class="h-44 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center">
                 ${product.main_image ? 
                     `<img src="${product.main_image}" alt="${product.name}" class="w-full h-full object-cover">` :
                     `<svg class="w-20 h-20 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,29 +372,26 @@ function renderProducts(products) {
                     </svg>`
                 }
             </div>
-            
-            <div class="p-4">
-                <div class="flex items-start justify-between mb-2">
-                    <div class="flex-1">
-                        <h3 class="font-semibold text-slate-900 mb-1">${product.name}</h3>
-                        <p class="text-sm text-slate-600">SKU: ${product.sku}</p>
-                    </div>
+            <div class="p-4 flex flex-col h-full">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-semibold text-slate-900 text-base break-words flex-1">${product.name}</h3>
                     ${getStockBadge(product.stock_status)}
                 </div>
-                
                 <div class="flex items-center gap-2 mb-3">
-                    <span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">${product.category_name}</span>
-                    <span class="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded capitalize">${product.product_type_display}</span>
+                    <span class="px-2 py-1 text-xs font-semibold bg-blue-50 text-blue-700 rounded-full flex items-center gap-1">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>
+                        ${product.category_name}
+                    </span>
                 </div>
                 
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between mb-3 flex-wrap">
                     <div>
-                        <p class="text-sm text-slate-600">Prix de vente</p>
-                        <p class="text-lg font-bold text-blue-600">${parseFloat(product.selling_price).toFixed(2)} HTG</p>
+                        <span class="block text-xs text-slate-500">Prix de vente</span>
+                        <span class="text-lg font-bold text-blue-600">${parseFloat(product.selling_price).toFixed(2)} HTG</span>
                     </div>
                     <div class="text-right">
-                        <p class="text-sm text-slate-600">Stock</p>
-                        <p class="text-lg font-bold text-slate-900">${product.current_stock}</p>
+                        <span class="block text-xs text-slate-500">Stock</span>
+                        <span class="text-lg font-bold text-slate-900">${product.current_stock}</span>
                     </div>
                 </div>
                 
@@ -485,6 +489,8 @@ async function openProductModal(productId = null) {
                 if (input) {
                     if (input.type === 'checkbox') {
                         input.checked = product[key];
+                    } else if (input.type === 'file') {
+                        // Ne rien faire pour les champs fichier
                     } else {
                         input.value = product[key] || '';
                     }
@@ -518,39 +524,31 @@ function closeProductModal() {
 // Handle form submit
 async function handleFormSubmit(e) {
     e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = {};
-    
-    formData.forEach((value, key) => {
-        if (key === 'is_active' || key === 'is_featured') {
-            data[key] = document.getElementById(key).checked;
-        } else {
-            data[key] = value;
-        }
-    });
-    
+    const form = e.target;
+    const formData = new FormData(form);
+    // Corrige la gestion des cases à cocher
+    formData.set('is_active', document.getElementById('is_active').checked ? 'on' : '');
+    formData.set('is_featured', document.getElementById('is_featured').checked ? 'on' : '');
+
     try {
         const url = currentEditId ? `/api/products/${currentEditId}/` : '/api/products/create/';
         const method = currentEditId ? 'PUT' : 'POST';
-        
         const response = await fetch(url, {
             method: method,
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify(data)
+            body: formData
         });
-        
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.message || 'Erreur lors de l\'enregistrement');
         }
-        
         showToast(currentEditId ? 'Produit modifié avec succès' : 'Produit créé avec succès', 'success');
         closeProductModal();
-        loadProducts();
+        setTimeout(() => {
+            loadProducts();
+        }, 300);
     } catch (error) {
         console.error('Error saving product:', error);
         showToast(error.message, 'error');
@@ -586,7 +584,7 @@ async function viewProduct(productId) {
                 
                 <div>
                     <p class="text-sm text-slate-600">Description</p>
-                    <p>${product.description || 'Aucune description'}</p>
+                    <p class="break-words overflow-wrap-anywhere whitespace-pre-line max-h-32 overflow-auto">${product.description || 'Aucune description'}</p>
                 </div>
                 
                 <div class="grid grid-cols-3 gap-4">
@@ -750,4 +748,13 @@ function getCookie(name) {
     return cookieValue;
 }
 </script>
+<style>
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+    animation: fade-up 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+</style>
 {% endblock %}

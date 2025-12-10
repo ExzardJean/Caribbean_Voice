@@ -1,14 +1,15 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Caribbean Voice - Écran Client</title>
+    <title>Caribbean Voice</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             overflow: hidden;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f4f6fa;
         }
         
         .product-enter {
@@ -47,42 +48,202 @@
             0%, 100% { opacity: 0; transform: translateY(20px); }
             10%, 90% { opacity: 1; transform: translateY(0); }
         }
+        
+        .thank-you-message span {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeInUp 0.8s forwards;
+        }
+        
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
-    <!-- Header -->
-    <div class="bg-white shadow-lg px-8 py-6">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <img src="/static/logo.svg" alt="Caribbean Voice" class="h-16 w-16">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-900">Caribbean Voice</h1>
-                    <p class="text-slate-600">Système de Gestion de Stock</p>
-                </div>
-            </div>
-            <div id="clock" class="text-2xl font-semibold text-slate-700"></div>
+    <!-- Main Content - Carte centrale unique -->
+    <div class="flex-1 flex items-center justify-center min-h-screen bg-[#f8fafc]">
+        <div class="bg-white rounded-none shadow-2xl px-0 py-14 w-full flex flex-col items-center animate-fadein" style="min-height: 100vh; position:relative; overflow:hidden;">
+            <!-- Icônes animées autour du logo -->
+            <div id="icon-container" class="relative flex items-center justify-center mb-8" style="height: 140px; width: 140px;"></div>
+            <h1 id="main-title" class="text-5xl font-extrabold text-slate-900 text-center drop-shadow mb-2 animate-title">Bienvenue chez Caribbean Voice</h1>
+            <p id="typing-slogan" class="text-2xl text-blue-700 text-center font-semibold mb-4 animate-fadein2" style="min-height:2.5em;"></p>
+            <div id="clock" class="text-2xl font-semibold text-slate-700 mt-2 animate-fadein2"></div>
         </div>
-    </div>
+        <style>
+            .animate-bounce-slow { animation: bounce 2.5s infinite; }
+            @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-18px); } }
+        </style>
+        <script>
+        // Détection de la fête et adaptation du style
+        function getCurrentEvent() {
+            const now = new Date();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            // Noël : 15 décembre - 31 décembre
+            if (month === 12 && day >= 15) return 'noel';
+            // Nouvel An : 1 janvier - 7 janvier
+            if (month === 1 && day <= 7) return 'nouvelan';
+            // Pâques (approximatif, avril)
+            if (month === 4) return 'paques';
+            // Été : juillet-août
+            if (month === 7 || month === 8) return 'ete';
+            return 'normal';
+        }
 
-    <!-- Main Content -->
-    <div class="flex-1 flex flex-col p-8">
-        <!-- Idle State (Publicités) -->
-        <div id="idle-state" class="flex-1 flex flex-col items-center justify-center text-white">
-            <div class="text-center space-y-8">
-                <svg class="w-32 h-32 mx-auto pulse-animation" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                </svg>
-                <h2 class="text-6xl font-bold">Bienvenue chez Caribbean Voice</h2>
-                <p class="text-3xl">Votre magasin de confiance pour l'électronique et le solaire</p>
-                
-                <div class="mt-12 space-y-6 slide-fade">
-                    <div class="bg-white/20 backdrop-blur-sm rounded-2xl p-8">
-                        <h3 class="text-4xl font-bold mb-4">🎉 Promotions du Jour</h3>
-                        <p class="text-2xl">Panneaux Solaires -15% • Laptops -10% • Climatiseurs -20%</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        const eventConfig = {
+            noel: {
+                icons: [
+                    '<svg class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 text-green-600 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2l2.09 6.26L20 9.27l-5 4.87L16.18 21 12 17.77 7.82 21 9 14.14l-5-4.87 5.91-.91L12 2z"/></svg>',
+                    '<svg class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 text-red-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8m-4-4v8"/></svg>',
+                    '<svg class="absolute left-1/2 -translate-x-1/2 -top-4 w-10 h-10 text-yellow-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12a8 8 0 11-16 0 8 8 0 0116 0z"/></svg>'
+                ],
+                slogans: [
+                    "Joyeux Noël chez Caribbean Voice !",
+                    "Profitez des fêtes avec nos offres spéciales",
+                    "Des cadeaux pour toute la famille"
+                ],
+                title: "Joyeux Noël chez Caribbean Voice"
+            },
+            nouvelan: {
+                icons: [
+                    '<svg class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 text-yellow-400 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+                    '<svg class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8m-4-4v8"/></svg>',
+                    '<svg class="absolute left-1/2 -translate-x-1/2 -top-4 w-10 h-10 text-green-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20m10-10H2"/></svg>'
+                ],
+                slogans: [
+                    "Bonne Année chez Caribbean Voice !",
+                    "Commencez l'année avec nos nouveautés",
+                    "Santé, bonheur et succès à tous !"
+                ],
+                title: "Bonne Année chez Caribbean Voice"
+            },
+            paques: {
+                icons: [
+                    '<svg class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 text-pink-400 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="10" stroke-width="2"/></svg>',
+                    '<svg class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 text-yellow-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>'
+                ],
+                slogans: [
+                    "Joyeuses Pâques chez Caribbean Voice !",
+                    "Des surprises pour petits et grands",
+                    "Profitez du printemps avec nos offres"
+                ],
+                title: "Joyeuses Pâques chez Caribbean Voice"
+            },
+            ete: {
+                icons: [
+                    '<svg class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 text-yellow-400 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/></svg>',
+                    '<svg class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12h20"/></svg>'
+                ],
+                slogans: [
+                    "Bel été chez Caribbean Voice !",
+                    "Rafraîchissez-vous avec nos produits",
+                    "Vacances, soleil et bonnes affaires"
+                ],
+                title: "Bel été chez Caribbean Voice"
+            },
+            normal: {
+                icons: [
+                    '<svg class="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 text-yellow-400 animate-bounce-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>',
+                    '<svg class="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 text-blue-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h8m-4-4v8"/></svg>',
+                    '<svg class="absolute left-1/2 -translate-x-1/2 -top-4 w-10 h-10 text-green-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v20m10-10H2"/></svg>'
+                ],
+                slogans: [
+                    "Votre magasin de confiance pour l'électronique et le solaire",
+                    "Des solutions innovantes pour tous vos besoins",
+                    "Service rapide, produits de qualité, prix imbattables"
+                ],
+                title: "Bienvenue chez Caribbean Voice"
+            }
+        };
+
+        let sloganIndex = 0;
+        let charIndex = 0;
+        let typingForward = true;
+        let currentSlogans = eventConfig.normal.slogans;
+        function typeSlogan() {
+            const el = document.getElementById('typing-slogan');
+            if (!el) return;
+            const slogan = currentSlogans[sloganIndex];
+            if (typingForward) {
+                charIndex++;
+                if (charIndex > slogan.length) {
+                    typingForward = false;
+                    setTimeout(typeSlogan, 1200);
+                    return;
+                }
+            } else {
+                charIndex--;
+                if (charIndex < 0) {
+                    typingForward = true;
+                    sloganIndex = (sloganIndex + 1) % currentSlogans.length;
+                    setTimeout(typeSlogan, 600);
+                    return;
+                }
+            }
+            el.innerHTML = slogan.substring(0, charIndex) + '<span class="typing-cursor">|</span>';
+            setTimeout(typeSlogan, typingForward ? 60 : 30);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Détecte la fête et adapte le style
+            const event = getCurrentEvent();
+            const config = eventConfig[event];
+            // Icônes
+            document.getElementById('icon-container').innerHTML = '<img src="{% static 'images/caribbean_voice.jpg' %}" alt="Caribbean Voice" class="h-32 w-32 drop-shadow-xl rounded-full object-cover border-4 border-blue-100 z-10">' + config.icons.join('');
+            // Slogan
+            currentSlogans = config.slogans;
+            sloganIndex = 0;
+            charIndex = 0;
+            typingForward = true;
+            // Titre principal
+            document.getElementById('main-title').textContent = config.title;
+            // Lance l'animation typing
+            typeSlogan();
+        });
+        </script>
+        <style>
+            .typing-cursor { color: #2563eb; animation: blink 1s steps(1) infinite; }
+            @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0;} }
+        </style>
+    </div>
+    <style>
+        .animate-fadein {
+            animation: fadein 1.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        .animate-fadein2 {
+            animation: fadein2 2s cubic-bezier(0.4,0,0.2,1);
+        }
+        .animate-title {
+            animation: popin 1.1s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes fadein {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadein2 {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes popin {
+            0% { opacity: 0; transform: scale(0.95) translateY(30px); }
+            60% { opacity: 1; transform: scale(1.05) translateY(-8px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+    <style>
+        .animate-fadein {
+            animation: fadein 1.2s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes fadein {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
 
         <!-- Active State (Liste Produits) -->
         <div id="active-state" class="hidden flex-1 flex flex-col">
@@ -157,6 +318,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
                 <h2 class="text-7xl font-bold">Merci de votre visite !</h2>
+                <div id="thankyou-message" class="text-4xl font-bold"></div>
                 <div class="space-y-4">
                     <p class="text-4xl">Montant payé : <span id="amount-paid" class="font-bold">0 HTG</span></p>
                     <p class="text-4xl">Monnaie rendue : <span id="change-amount" class="font-bold text-green-400">0 HTG</span></p>
@@ -415,9 +577,19 @@
             document.getElementById('amount-paid').textContent = formatCurrency(amountPaid);
             document.getElementById('change-amount').textContent = formatCurrency(change);
             setState('thankyou');
-            
-            // Reset after 5 seconds
+            animateThankYouMessage('Merci, à la prochaine !');
+            // Reset after 5 secondes
             setTimeout(resetDisplay, 5000);
+        }
+        function animateThankYouMessage(message) {
+            const container = document.getElementById('thankyou-message');
+            container.innerHTML = '';
+            for (let i = 0; i < message.length; i++) {
+                const span = document.createElement('span');
+                span.textContent = message[i];
+                span.style.animationDelay = (i * 0.08) + 's';
+                container.appendChild(span);
+            }
         }
         
         function resetDisplay() {
