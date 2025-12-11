@@ -120,11 +120,7 @@ def client_delete(request, client_id):
 def client_detail(request, client_id):
     """Détails d'un client avec historique"""
     customer = get_object_or_404(Customer, id=client_id)
-    
-    # Get sales history
     sales = SalesOrder.objects.filter(customer=customer).order_by('-created_at')[:20]
-    
-    # Calculate statistics
     total_sales = SalesOrder.objects.filter(customer=customer, status='completed').aggregate(
         total=Sum('total_amount'),
         count=Count('id')
@@ -136,7 +132,6 @@ def client_detail(request, client_id):
         'total_sales': total_sales['total'] or Decimal('0.00'),
         'sales_count': total_sales['count'] or 0,
     }
-    
     return render(request, 'client_detail.html', context)
 
 

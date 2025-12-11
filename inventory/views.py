@@ -1,3 +1,36 @@
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from .models import CashRegister
+from django.views.decorators.csrf import csrf_exempt
+
+# Vue pour fermer la caisse et déconnecter l'utilisateur
+@csrf_exempt
+@login_required
+def close_cash_register_and_logout(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    try:
+        # Récupérer le mot de passe envoyé
+        password = request.POST.get('password', '').strip()
+        from .models import CashRegisterSettings
+        settings_obj, _ = CashRegisterSettings.objects.get_or_create(id=1)
+        if not password or password != settings_obj.password:
+            return JsonResponse({'error': 'Mot de passe caisse incorrect.'}, status=403)
+        # Fermer la caisse ouverte de l'utilisateur
+        cash_register = CashRegister.objects.filter(cashier=request.user, status='open', closing_time__isnull=True).first()
+        if cash_register:
+            cash_register.status = 'closed'
+            from django.utils import timezone
+            cash_register.closing_time = timezone.now()
+            cash_register.save()
+        # Journaliser la fermeture
+        from .models import UserLog
+        ip = request.META.get('REMOTE_ADDR')
+        UserLog.objects.create(user=request.user, action='close_cash_register', ip_address=ip, description='Fermeture automatique de la caisse')
+        # Ne pas déconnecter, juste fermer la caisse
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import CashRegisterSettings

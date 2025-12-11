@@ -1,6 +1,7 @@
 {% extends 'dashboard_base.html' %}
 
 {% block dashboard_content %}
+<div id="open-register-success" class="hidden fixed left-1/2 -translate-x-1/2 top-6 z-50 px-6 py-3 bg-green-600 text-white rounded-lg shadow-lg text-lg font-semibold transition-all duration-300"></div>
 <div class="h-[calc(100vh-80px)] flex flex-col bg-slate-50" style="background-color: #f8fafc; color: #222;">
     <!-- POS Header -->
     <div class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
@@ -17,14 +18,71 @@
             {% endif %}
         </div>
         <div class="flex items-center gap-3">
-            <a href="{% url 'change_cash_register_password' %}" class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors flex items-center gap-2">
+            {% if cash_register %}
+            <button onclick="openChangePasswordModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-1.104.896-2 2-2s2 .896 2 2-.896 2-2 2-2-.896-2-2zm0 0V7m0 4v4m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
                 Changer mot de passe caisse
-            </a>
+            </button>
+            <!-- Modal Changer mot de passe caisse -->
+            <div id="change-password-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+                    <button onclick="closeChangePasswordModal()" class="absolute top-2 right-2 text-slate-400 hover:text-slate-700 text-2xl">&times;</button>
+                    <h2 class="text-2xl font-bold mb-4 text-center">Changer le mot de passe de la caisse</h2>
+                    <form id="change-password-form" method="post" autocomplete="off">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label class="block text-gray-700">Nouveau mot de passe</label>
+                            <input type="password" name="new_password" class="w-full border rounded px-3 py-2" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-gray-700">Confirmer le mot de passe</label>
+                            <input type="password" name="confirm_password" class="w-full border rounded px-3 py-2" required>
+                        </div>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">Changer</button>
+                    </form>
+                    <div id="change-password-messages" class="mt-4 text-center"></div>
+                </div>
+            </div>
+            <script>
+            function openChangePasswordModal() {
+                document.getElementById('change-password-modal').classList.remove('hidden');
+            }
+            function closeChangePasswordModal() {
+                document.getElementById('change-password-modal').classList.add('hidden');
+                document.getElementById('change-password-form').reset();
+                document.getElementById('change-password-messages').innerHTML = '';
+            }
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('change-password-form').onsubmit = async function(e) {
+                    e.preventDefault();
+                    const form = e.target;
+                    const data = new FormData(form);
+                    const csrfToken = data.get('csrfmiddlewaretoken');
+                    const response = await fetch("{% url 'change_cash_register_password' %}", {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': csrfToken },
+                        body: data
+                    });
+                    const html = await response.text();
+                    // Extraire les messages du HTML retourné
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const messages = doc.querySelectorAll('ul li');
+                    let msgHtml = '';
+                    messages.forEach(m => { msgHtml += `<div class='text-red-600 mb-2'>${m.textContent}</div>`; });
+                    if (!msgHtml && html.includes('Mot de passe de la caisse mis à jour')) {
+                        msgHtml = `<div class='text-green-600 mb-2'>Mot de passe changé avec succès.</div>`;
+                        setTimeout(closeChangePasswordModal, 1500);
+                    }
+                    document.getElementById('change-password-messages').innerHTML = msgHtml;
+                }
+            });
+            </script>
+            {% endif %}
             {% if not cash_register %}
-            <button onclick="openCashRegisterModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+            <button onclick="openCashRegisterModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -37,13 +95,13 @@
                 </svg>
                 Écran Client
             </button>
-            <button onclick="openProformaModal()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+            <button onclick="openProformaModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
                 Créer Proformat
             </button>
-            <button onclick="closeCashRegisterModal()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2">
+            <button onclick="closeCashRegisterModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
@@ -61,7 +119,7 @@
             </svg>
             <h2 class="text-2xl font-bold text-slate-900 mb-2">Caisse Fermée</h2>
             <p class="text-slate-600 mb-6">Veuillez ouvrir une caisse pour commencer les ventes</p>
-            <button onclick="openCashRegisterModal()" class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
+            <button onclick="openCashRegisterModal()" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold">
                 Ouvrir une Caisse
             </button>
         </div>
@@ -113,7 +171,7 @@
 
             <!-- Products Grid -->
             <div class="flex-1 overflow-y-auto p-4">
-                <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3">
                     {% for product in products %}
                     <button onclick="addToCart({{ product.id }}, '{{ product.name|escapejs }}', {{ product.selling_price }}, '{{ product.sku }}', {{ product.current_stock }})" 
                             class="product-card bg-white rounded-lg border-2 border-slate-200 hover:border-blue-500 hover:shadow-lg transition-all p-3 text-left"
@@ -147,6 +205,18 @@
                     <h2 class="text-xl font-bold text-slate-900">Panier</h2>
                     <button onclick="clearCart()" class="text-red-600 hover:text-red-700 text-sm font-medium">
                         Vider
+                    </button>
+                    <!-- Modal Vider Panier -->
+                    <div id="emptyCartModal" class="fixed inset-0 bg-black bg-opacity-40 hidden flex items-center justify-center z-50 p-4">
+                        <div class="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 text-center">
+                            <h3 class="text-lg font-bold text-slate-900 mb-4">Vider le panier</h3>
+                            <p class="mb-6 text-slate-700">Voulez-vous vraiment vider le panier&nbsp;?</p>
+                            <div class="flex items-center justify-center gap-4">
+                                <button onclick="hideEmptyCartModal()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-semibold">Annuler</button>
+                                <button onclick="confirmEmptyCart()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">Vider</button>
+                            </div>
+                        </div>
+                    </div>
                     </button>
                 </div>
                 
@@ -244,69 +314,55 @@
     </div>
 </div>
 
-<!-- Close Cash Register Modal -->
+<!-- Nouveau modal fermeture caisse avec mot de passe -->
 <div id="close-register-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-6">Fermer la Caisse</h2>
-        
-        {% comment %} <div class="space-y-4 mb-6">
-            <div class="p-4 bg-blue-50 rounded-lg">
-                <div class="flex justify-between mb-2">
-                    <span class="text-sm text-slate-600">Montant attendu</span>
-                    <span id="expected-balance" class="font-bold text-blue-600">0.00 HTG</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-sm text-slate-600">Total ventes</span>
-                    <span id="total-sales" class="font-semibold">0.00 HTG</span>
-                </div>
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+        <button onclick="closeCloseRegisterModal()" class="absolute top-2 right-2 text-slate-400 hover:text-slate-700 text-2xl">&times;</button>
+        <h2 class="text-2xl font-bold mb-4 text-center">Fermer la Caisse</h2>
+        <form id="close-register-form" method="post" autocomplete="off">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-gray-700">Mot de passe caisse</label>
+                <input type="password" name="password" class="w-full border rounded px-3 py-2" required>
             </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Montant réel compté (HTG)</label>
-                <input type="number" id="actual-balance" 
-                       class="w-full px-4 py-3 text-lg border-2 border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="0.00"
-                       step="0.01">
-            </div>
-            
-            <div id="difference-display" class="hidden p-4 rounded-lg">
-                <div class="flex justify-between">
-                    <span class="font-medium">Écart</span>
-                    <span id="difference-amount" class="font-bold">0.00 HTG</span>
-                </div>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">Notes (optionnel)</label>
-                <textarea id="close-notes" 
-                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows="3"
-                        placeholder="Remarques sur la session..."></textarea>
-            </div>
-        </div> {% endcomment %}
-
-        <div class="flex gap-3">
-            <button onclick="closeCloseRegisterModal()" class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">
-                Annuler
-            </button>
-            <button onclick="showCloseRegisterConfirmModal()" class="flex-1 px-4 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-900 transition-colors font-semibold">
-                Logout
-            </button>
-        </div>
-
-        <div id="close-register-confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 text-center">
-                <h3 class="text-xl font-bold mb-4 text-slate-900">Voulez-vous vraiment fermer la caisse&nbsp;?</h3>
-                <p class="mb-6 text-slate-700">Cette action va clôturer la session de caisse.<br>Confirmez-vous la fermeture&nbsp;?</p>
-                <div class="flex gap-3">
-                    <button onclick="hideCloseRegisterConfirmModal()" class="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 font-semibold">Annuler</button>
-                    <button onclick="validateCloseRegister()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-semibold">Valider</button>
-                </div>
-            </div>
-        </div>
-        </div>
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded w-full">Fermer la caisse</button>
+        </form>
+        <div id="close-register-messages" class="mt-4 text-center"></div>
     </div>
 </div>
+
+<script>
+function closeCloseRegisterModal() {
+    document.getElementById('close-register-modal').classList.add('hidden');
+    document.getElementById('close-register-form').reset();
+    document.getElementById('close-register-messages').innerHTML = '';
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('close-register-form').onsubmit = async function(e) {
+        e.preventDefault();
+        const form = e.target;
+        const data = new FormData(form);
+        const csrfToken = data.get('csrfmiddlewaretoken');
+        const response = await fetch("{% url 'close_cash_register_and_logout' %}", {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: data
+        });
+        const html = await response.text();
+        // On suppose que le backend retourne 'success' ou un message d'erreur
+        if (html.includes('success')) {
+            window.location.reload();
+        } else {
+            let msg = 'Mot de passe incorrect ou erreur.';
+            try {
+                const json = JSON.parse(html);
+                if (json.error) msg = json.error;
+            } catch {}
+            document.getElementById('close-register-messages').innerHTML = `<div class='text-red-600 mb-2'>${msg}</div>`;
+        }
+    }
+});
+</script>
 
 <div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
@@ -388,7 +444,7 @@
             <button onclick="cancelValidation()" class="flex-1 px-4 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">
                 Annuler
             </button>
-            <button onclick="submitValidation()" class="flex-1 px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-semibold">
+            <button onclick="submitValidation()" class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold">
                 Valider
             </button>
         </div>
@@ -677,12 +733,24 @@ function removeFromCart(index) {
 
 function clearCart() {
     if (cart.length === 0) return;
-    
-    if (confirm('Voulez-vous vraiment vider le panier ?')) {
-        cart = [];
-        renderCart();
-        updateTotals();
-    }
+    showEmptyCartModal();
+}
+
+function showEmptyCartModal() {
+    document.getElementById('emptyCartModal').classList.remove('hidden');
+    document.getElementById('emptyCartModal').classList.add('flex');
+}
+function hideEmptyCartModal() {
+    document.getElementById('emptyCartModal').classList.add('hidden');
+    document.getElementById('emptyCartModal').classList.remove('flex');
+}
+function confirmEmptyCart() {
+    cart = [];
+    renderCart();
+    updateTotals();
+    hideEmptyCartModal();
+    playFeedbackSound('success');
+    flashFeedback('green');
 }
 
 function updateTotals() {
@@ -808,7 +876,7 @@ function closeOpenRegisterModal() {
 function confirmOpenRegister() {
     const password = document.getElementById('open-register-password')?.value.trim();
     if (!password) {
-        showCustomPopup('Veuillez entrer le mot de passe pour ouvrir la caisse');
+        showOpenRegisterSuccess('Veuillez entrer le mot de passe pour ouvrir la caisse', true);
         return;
     }
     fetch('/pos/open-register/', {
@@ -822,16 +890,27 @@ function confirmOpenRegister() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showCustomPopup('Caisse ouverte avec succès !');
+            showOpenRegisterSuccess('Caisse ouverte avec succès !', false);
             setTimeout(() => window.location.reload(), 1500);
         } else {
-            showCustomPopup('Erreur: ' + data.error);
+            showOpenRegisterSuccess('Erreur: ' + data.error, true);
         }
     })
     .catch(error => {
         console.error('Open register error:', error);
-        showCustomPopup('Erreur lors de l\'ouverture de la caisse');
+        showOpenRegisterSuccess('Erreur lors de l\'ouverture de la caisse', true);
     });
+}
+
+function showOpenRegisterSuccess(message, isError) {
+    const el = document.getElementById('open-register-success');
+    el.textContent = message;
+    el.classList.remove('hidden');
+    el.classList.toggle('bg-green-600', !isError);
+    el.classList.toggle('bg-red-600', isError);
+    setTimeout(() => {
+        el.classList.add('hidden');
+    }, 2000);
 }
 
 

@@ -73,6 +73,7 @@ urlpatterns = [
      path('products/', include('products.urls')),
     path('pos/open-register/', views.open_cash_register, name='open_cash_register'),
     path('pos/close-register/', views.close_cash_register, name='close_cash_register'),
+    path('pos/close-register-logout/', views.close_cash_register_and_logout, name='close_cash_register_and_logout'),
     path('pos/create-proforma/', views.create_proforma, name='create_proforma'),
     path('pos/convert-proforma/<int:proforma_id>/', views.convert_proforma_to_sale, name='convert_proforma'),
     path('proforma/<int:proforma_id>/print/', proforma_print, name='proforma_print'),
