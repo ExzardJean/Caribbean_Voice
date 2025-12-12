@@ -6,7 +6,7 @@
     <!-- Toast Notification -->
     <div id="toast" class="fixed top-6 right-6 z-50 hidden px-6 py-4 bg-blue-600 text-white rounded-lg shadow-lg text-lg font-semibold transition-all duration-300"></div>
     <!-- Sidebar -->
-    <aside id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform bg-slate-900">
+    <aside id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform bg-slate-900 lg:translate-x-0 lg:w-64 w-4/5 sm:w-2/3 md:w-1/2">
         <div class="h-full flex flex-col">
             <!-- Logo -->
             <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-800">
@@ -61,7 +61,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                     </svg>
-                    <span class="text-sm font-medium">Point de Vente (POS)</span>
+                        <span class="text-sm font-medium">Point de Vente (POS)</span>
                 </a>
                 
                 <a href="{% url 'customers' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'customers' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
@@ -119,7 +119,7 @@
     </aside>
 
     <!-- Main Content -->
-    <div class="lg:ml-64 transition-all duration-300">
+    <div class="transition-all duration-300 lg:ml-64">
         <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
             <div class="flex items-center justify-between px-4 lg:px-6 py-4">
                 <div class="flex items-center gap-4">
@@ -164,19 +164,13 @@
         </main>
     </div>
 
-<style>
-@keyframes fade-up {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-up {
-    animation: fade-up 0.8s cubic-bezier(0.4,0,0.2,1);
-}
-</style>
 <script>
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
-        sidebar.classList.toggle('-translate-x-full');
+        if (window.innerWidth < 1024) {
+            sidebar.classList.toggle('open');
+            sidebar.classList.remove('-translate-x-full');
+        }
     }
     
     function showToast(message, color = 'bg-blue-600') {
@@ -189,4 +183,21 @@
         }, 3000);
     }
 </script>
+<style>
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+    animation: fade-up 0.8s cubic-bezier(0.4,0,0.2,1);
+}
+@media (max-width: 1023px) {
+    #sidebar {
+        transform: translateX(-100%);
+    }
+    #sidebar.open {
+        transform: translateX(0);
+    }
+}
+</style>
 {% endblock %}

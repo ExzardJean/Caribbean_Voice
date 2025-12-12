@@ -528,12 +528,15 @@ class ProformaItem(models.Model):
         return f"{self.product.name} x {self.quantity}"
     
     def save(self, *args, **kwargs):
-        # Calculer le prix total
-        subtotal = self.unit_price * self.quantity
-        discount = subtotal * (self.discount_percent / 100)
+        from decimal import Decimal
+        # Ensure all operands are Decimal
+        unit_price = self.unit_price if isinstance(self.unit_price, Decimal) else Decimal(str(self.unit_price))
+        quantity = Decimal(str(self.quantity))
+        discount_percent = self.discount_percent if isinstance(self.discount_percent, Decimal) else Decimal(str(self.discount_percent))
+        subtotal = unit_price * quantity
+        discount = subtotal * (discount_percent / Decimal('100'))
         self.total_price = subtotal - discount
         super().save(*args, **kwargs)
-        
         # Recalculer les totaux du proformat
         self.proforma.calculate_totals()
 

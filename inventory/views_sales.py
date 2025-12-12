@@ -1,3 +1,65 @@
+import io
+from django.contrib.auth.decorators import login_required
+import csv
+import pandas as pd
+from django.http import HttpResponse
+# --- EXPORT SALES TO EXCEL ---
+from django.utils.encoding import smart_str
+@login_required
+def export_sales_excel(request):
+    sales = SalesOrder.objects.select_related('customer', 'created_by').order_by('-created_at')
+    data = []
+    for sale in sales:
+        data.append({
+            'N° Facture': sale.order_number,
+            'Date': sale.created_at.strftime('%d/%m/%Y %H:%M'),
+            'Client': f"{sale.customer.first_name} {sale.customer.last_name}" if sale.customer else '-',
+            'Téléphone': sale.customer.phone if sale.customer else '-',
+            'Caissier(ère)': sale.created_by.get_full_name() if sale.created_by else '-',
+            'Montant total': float(sale.total_amount),
+            'Montant payé': float(sale.paid_amount),
+            'Remise': float(sale.discount_amount),
+            'Statut': sale.get_status_display(),
+            'Paiement': sale.get_payment_method_display() if hasattr(sale, 'get_payment_method_display') else sale.payment_method,
+        })
+    df = pd.DataFrame(data)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Ventes')
+    output.seek(0)
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=ventes.xlsx'
+    return response
+
+# --- EXPORT SALES TO CSV ---
+@login_required
+def export_sales_csv(request):
+    sales = SalesOrder.objects.select_related('customer', 'created_by').order_by('-created_at')
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=ventes.csv'
+    writer = csv.writer(response)
+    writer.writerow([
+        smart_str('N° Facture'), smart_str('Date'), smart_str('Client'), smart_str('Téléphone'),
+        smart_str('Caissier(ère)'), smart_str('Montant total'), smart_str('Montant payé'),
+        smart_str('Remise'), smart_str('Statut'), smart_str('Paiement')
+    ])
+    for sale in sales:
+        writer.writerow([
+            sale.order_number,
+            sale.created_at.strftime('%d/%m/%Y %H:%M'),
+            f"{sale.customer.first_name} {sale.customer.last_name}" if sale.customer else '-',
+            sale.customer.phone if sale.customer else '-',
+            sale.created_by.get_full_name() if sale.created_by else '-',
+            float(sale.total_amount),
+            float(sale.paid_amount),
+            float(sale.discount_amount),
+            sale.get_status_display(),
+            sale.get_payment_method_display() if hasattr(sale, 'get_payment_method_display') else sale.payment_method,
+        ])
+    return response
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required

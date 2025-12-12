@@ -370,6 +370,23 @@
             }).format(amount) + ' HTG';
         }
 
+        // Affiche un toast/message sur l'écran client
+        function showClientToast(message, color = 'bg-blue-600') {
+            let toast = document.getElementById('client-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'client-toast';
+                toast.className = 'fixed top-6 left-1/2 -translate-x-1/2 z-50 px-8 py-4 text-white rounded-lg shadow-lg text-2xl font-bold transition-all duration-300';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.className = `fixed top-6 left-1/2 -translate-x-1/2 z-50 px-8 py-4 text-white rounded-lg shadow-lg text-2xl font-bold transition-all duration-300 ${color}`;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2500);
+        }
+
         // Update display
         function updateDisplay() {
             const productsList = document.getElementById('products-list');
@@ -417,43 +434,40 @@
             // Total
             const total = subtotal - discountAmount + taxAmount;
             document.getElementById('total').textContent = formatCurrency(total);
+            // Affiche le toast à chaque update
+            if (cart.length > 0) {
+                showClientToast('Panier mis à jour !', 'bg-green-600');
+            }
         }
 
-        // WebSocket Connection (with fallback to polling)
+        // WebSocket Connection (mise à jour pour canal panier)
         let ws = null;
         let pollingInterval = null;
         
         function connectWebSocket() {
-            // Try WebSocket first
             try {
                 const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                const wsUrl = `${protocol}//${window.location.host}/ws/customer-display/`;
-                
+                const wsUrl = `${protocol}//${window.location.host}/ws/cart/`;
                 ws = new WebSocket(wsUrl);
-                
                 ws.onopen = function() {
-                    console.log('WebSocket connected');
                     reconnectAttempts = 0;
-                    
-                    // Register this display
-                    ws.send(JSON.stringify({
-                        type: 'register',
-                        display_id: DISPLAY_ID
-                    }));
                 };
-                
                 ws.onmessage = function(event) {
                     const data = JSON.parse(event.data);
-                    handleMessage(data);
+                    if (data.cart !== undefined) {
+                        cart = data.cart || [];
+                        if (cart.length > 0) {
+                            setState('active');
+                            updateDisplay();
+                        } else {
+                            setState('idle');
+                        }
+                    }
                 };
-                
                 ws.onerror = function(error) {
-                    console.error('WebSocket error:', error);
                     fallbackToPolling();
                 };
-                
                 ws.onclose = function() {
-                    console.log('WebSocket closed');
                     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
                         reconnectAttempts++;
                         setTimeout(connectWebSocket, 3000 * reconnectAttempts);
@@ -462,7 +476,6 @@
                     }
                 };
             } catch (error) {
-                console.error('WebSocket not supported:', error);
                 fallbackToPolling();
             }
         }

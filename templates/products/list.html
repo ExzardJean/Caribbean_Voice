@@ -1,9 +1,27 @@
 {% extends 'dashboard_base.html' %}
 {% block content %}
-<h1>Liste des produits</h1>
-<ul>
+<div class="flex items-center justify-between px-4 lg:px-6 py-4">
+    <h1 class="text-2xl font-bold">Liste des Produits</h1>
+</div>
+<div class="flex gap-2 px-4 lg:px-6 mb-4">
+    <a href="/products/export/excel/" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">Exporter Excel</a>
+    <a href="/products/export/csv/" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Exporter CSV</a>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
     {% for product in products %}
-    <li>{{ product.name }}</li>
+    <div class="bg-white rounded-lg shadow p-4 flex flex-col">
+        <img src="{{ product.image_url|default:'/static/images/default_product.png' }}" alt="{{ product.name }}" class="w-full h-32 object-contain mb-2">
+        <div class="font-semibold text-lg mb-1">{{ product.name }}</div>
+        <div class="text-xs text-blue-600 mb-1">{{ product.category.name }}</div>
+        <div class="text-green-600 text-sm font-bold mb-1">En stock</div>
+        <div class="text-slate-700 text-sm">Prix de vente<br><span class="font-bold">{{ product.selling_price }} HTG</span></div>
+        <div class="text-slate-700 text-sm">Stock<br><span class="font-bold">{{ product.current_stock }}</span></div>
+        <div class="flex gap-2 mt-2">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Modifier</button>
+            <button class="bg-slate-200 text-slate-700 px-2 py-2 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></button>
+            <button class="bg-red-100 text-red-600 px-2 py-2 rounded-lg"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        </div>
+    </div>
     {% endfor %}
-</ul>
+</div>
 {% endblock %}

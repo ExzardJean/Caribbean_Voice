@@ -77,6 +77,7 @@ def pos_create_proforma(request):
         data = json.loads(request.body)
         cart = data.get('cart', [])
         customer_id = data.get('customer_id')
+        # Always convert discount to Decimal
         discount_percent = Decimal(str(data.get('discount', 0)))
         valid_days = int(data.get('valid_days', 7))
 
@@ -95,8 +96,8 @@ def pos_create_proforma(request):
             customer=customer,
             created_by=request.user,
             valid_until=timezone.now().date() + timezone.timedelta(days=valid_days),
-            discount_amount=0,
-            tax_amount=0,
+            discount_amount=Decimal('0'),
+            tax_amount=Decimal('0'),
             notes='',
             terms_conditions='Valable 7 jours. Paiement à la livraison.'
         )
@@ -105,13 +106,22 @@ def pos_create_proforma(request):
         for item in cart:
             product = Product.objects.get(id=item['id'])
             quantity = int(item['quantity'])
-            unit_price = Decimal(str(product.selling_price))
+            # Ensure selling_price is Decimal
+            selling_price = product.selling_price
+            if not isinstance(selling_price, Decimal):
+                selling_price = Decimal(str(selling_price))
+            # Ensure discount_percent is Decimal
+            item_discount = item.get('discount_percent', None)
+            if item_discount is not None:
+                item_discount = Decimal(str(item_discount))
+            else:
+                item_discount = discount_percent
             ProformaItem.objects.create(
                 proforma=proforma,
                 product=product,
                 quantity=quantity,
-                unit_price=unit_price,
-                discount_percent=discount_percent
+                unit_price=selling_price,
+                discount_percent=item_discount
             )
 
         proforma.calculate_totals()
@@ -851,10 +861,18 @@ def create_proforma(request):
             return JsonResponse({'error': 'Le panier est vide'}, status=400)
         
         customer_id = data.get('customer_id')
-        if not customer_id:
+        customer_name = data.get('customer_name', '').strip()
+        if customer_id:
+            customer = Customer.objects.get(id=customer_id)
+        elif customer_name:
+            # Créer un client temporaire ou de passage
+            customer, _ = Customer.objects.get_or_create(
+                first_name=customer_name,
+                last_name='',
+                defaults={'phone': 'N/A', 'email': '', 'address': '', 'city': ''}
+            )
+        else:
             return JsonResponse({'error': 'Client requis'}, status=400)
-        
-        customer = Customer.objects.get(id=customer_id)
         valid_days = int(data.get('valid_days', 7))
         discount_percent = Decimal(str(data.get('discount', 0)))
         notes = data.get('notes', '')
@@ -865,14 +883,19 @@ def create_proforma(request):
         
         for item in cart:
             product = Product.objects.get(id=item['id'])
-            quantity = int(item['quantity'])
-            item_total = product.selling_price * quantity
+            quantity = Decimal(str(item['quantity']))
+            # Forcer la conversion du prix en Decimal sans float intermédiaire
+            unit_price = product.selling_price
+            try:
+                unit_price = Decimal(str(unit_price))
+            except Exception:
+                unit_price = Decimal(str(float(unit_price)))
+            item_total = unit_price * quantity
             subtotal += item_total
-            
             items_data.append({
                 'product': product,
-                'quantity': quantity,
-                'unit_price': product.selling_price,
+                'quantity': int(quantity),
+                'unit_price': unit_price,
                 'total': item_total
             })
         

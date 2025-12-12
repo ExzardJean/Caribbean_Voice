@@ -1001,11 +1001,40 @@ function confirmCloseRegister() {
 }
 
 function openProformaModal() {
+    const customerName = document.getElementById('customer-name')?.value.trim() || '';
+    if (!customerName) {
+        showCustomPopup('Veuillez saisir le nom du client avant de créer un proformat.');
+        return;
+    }
     if (cart.length === 0) {
         showCustomPopup('Le panier est vide !');
         return;
     }
-    showCustomPopup('Fonctionnalité de proformat en cours d\'implémentation...');
+    fetch('/pos/create-proforma/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: JSON.stringify({
+            cart: cart,
+            customer_name: customerName,
+            discount: typeof discountPercent !== 'undefined' ? discountPercent : 0,
+            valid_days: 7
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = `/proforma/${data.proforma_id}/print/`;
+        } else {
+            showCustomPopup('Erreur: ' + (data.error || 'Impossible de créer le proformat.'));
+        }
+    })
+    .catch(error => {
+        console.error('Proformat error:', error);
+        showCustomPopup('Erreur lors de la création du proformat');
+    });
 }
 
 function showCustomPopup(message) {
