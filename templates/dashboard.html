@@ -117,50 +117,61 @@
         <div class="md:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 transition duration-500 hover:shadow-xl animate-fade-in">
             <div class="p-6 border-b border-slate-200">
                 <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                     </svg>
-                    Alertes de Stock
+                    Top Produits Vendus
                 </h2>
             </div>
             <div class="p-6">
-                {% if recent_alerts %}
-                    <div class="space-y-3">
-                        {% for alert in recent_alerts %}
-                        <div class="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                            <div class="flex items-center gap-3">
-                                <div class="p-2 bg-orange-100 rounded-lg">
-                                    <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p class="font-medium text-slate-900">{{ alert.product.name }}</p>
-                                    <p class="text-sm text-slate-600">
-                                        {% if alert.alert_type == 'out_of_stock' %}
-                                            Rupture de stock
-                                        {% elif alert.alert_type == 'low_stock' %}
-                                            Stock faible
-                                        {% else %}
-                                            Surstock
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="font-semibold text-orange-600">{{ alert.current_stock }} unités</p>
-                                <p class="text-xs text-slate-500">Seuil: {{ alert.threshold }}</p>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
+                {% if top_products %}
+                <canvas id="topProductsChart" height="120"></canvas>
+                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                <script>
+                    const ctx = document.getElementById('topProductsChart').getContext('2d');
+                    const topProductsLabels = [{% for product in top_products %}'{{ product.product__name }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+                    const topProductsData = [{% for product in top_products %}{{ product.total_quantity }}{% if not forloop.last %}, {% endif %}{% endfor %}];
+                    const topProductsColors = [
+                        'rgba(37, 99, 235, 0.7)',    // bleu principal
+                        'rgba(59, 130, 246, 0.6)',   // bleu clair
+                        'rgba(56, 189, 248, 0.5)',   // cyan
+                        'rgba(203, 213, 225, 0.7)',  // gris clair
+                        'rgba(71, 85, 105, 0.5)'     // gris foncé
+                    ];
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: topProductsLabels,
+                            datasets: [{
+                                label: 'Quantité Vendue',
+                                data: topProductsData,
+                                backgroundColor: topProductsColors.slice(0, topProductsLabels.length),
+                                borderColor: topProductsColors.slice(0, topProductsLabels.length).map(c => c.replace('0.8', '1')),
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                title: {
+                                    display: true,
+                                    text: 'Top 5 Produits Vendus'
+                                }
+                            },
+                            scales: {
+                                y: { beginAtZero: true }
+                            }
+                        }
+                    });
+                </script>
                 {% else %}
-                    <div class="text-center py-8 text-slate-500">
-                        <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p>Aucune alerte de stock</p>
-                    </div>
+                <div class="text-center py-8 text-slate-500">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    </svg>
+                    <p>Aucune donnée de vente disponible</p>
+                </div>
                 {% endif %}
             </div>
         </div>
@@ -283,16 +294,16 @@
                 <div class="bg-white rounded-lg shadow p-4 md:p-6 transition duration-500 hover:shadow-xl animate-fade-in w-full">
                     <canvas id="topProductsChart" height="120"></canvas>
                 </div>
-                                <style>
-@keyframes fade-in {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-    animation: fade-in 0.8s cubic-bezier(0.4,0,0.2,1);
-}
-</style>
-                                <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in {
+                animation: fade-in 0.8s cubic-bezier(0.4,0,0.2,1);
+            }
+        </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                 <script>
                 const ctx = document.getElementById('topProductsChart').getContext('2d');
                 const topProductsLabels = [{% for product in top_products %}'{{ product.product__name }}'{% if not forloop.last %}, {% endif %}{% endfor %}];

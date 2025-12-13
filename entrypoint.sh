@@ -11,4 +11,4 @@ echo "=== [3/4] Collecte des fichiers statiques Django ==="
 python manage.py collectstatic --noinput
 
 echo "=== [4/4] Lancement Gunicorn ==="
-exec gunicorn health_data_system.wsgi:application --bind 0.0.0.0:8000
+exec gunicorn caribbean_stock.wsgi:application --bind 0.0.0.0:8000

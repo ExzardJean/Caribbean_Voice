@@ -27,7 +27,7 @@ repos:
     hooks:
       - id: pip-freeze
         name: Generate requirements.txt with pip freeze
-        entry: bash -c "source PDI_env/Scripts/activate && pip freeze > requirements.txt"
+        entry: bash -c "source karibean-voice/Scripts/activate && pip freeze > requirements.txt"
         language: system
         pass_filenames: false
         files: \.py$
@@ -36,7 +36,7 @@ repos:
     hooks:
       - id: django-check
         name: Run Django Check
-        entry: bash -c "source PDI_env/Scripts/activate && python manage.py check"
+        entry: bash -c "source karibean-voice/Scripts/activate && python manage.py check"
         language: system
         pass_filenames: false
         types: [python]
