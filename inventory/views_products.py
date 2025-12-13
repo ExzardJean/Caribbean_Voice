@@ -1,3 +1,85 @@
+import io
+import csv
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+def export_inventory(request):
+    from .models import Product
+    products = Product.objects.filter(is_active=True).select_related('category').order_by('-created_at')
+    # Prepare data
+    data = []
+    for p in products:
+        data.append({
+            'ID': p.id,
+            'Nom': p.name,
+            'Catégorie': p.category.name,
+            'Stock actuel': p.current_stock,
+            'Stock min': p.min_stock_level,
+            'Stock max': p.max_stock_level,
+            'Prix vente': str(p.selling_price),
+            'Statut': p.stock_status,
+            'SKU': p.sku,
+            'Code-barres': p.barcode,
+            'Marque': p.brand,
+            'Modèle': p.model,
+        })
+    # Try Excel export
+    try:
+        import pandas as pd
+        output = io.BytesIO()
+        df = pd.DataFrame(data)
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Inventaire')
+        output.seek(0)
+        response = HttpResponse(output.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="inventaire.xlsx"'
+        return response
+    except ImportError:
+        # Fallback to CSV
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=data[0].keys())
+        writer.writeheader()
+        writer.writerows(data)
+        response = HttpResponse(output.getvalue(), content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="inventaire.csv"'
+        return response
+from django.views.decorators.csrf import csrf_exempt
+
+# API pour ajuster le stock d'un produit
+@csrf_exempt
+@login_required
+@require_http_methods(["PUT"])
+def adjust_product_stock_api(request, product_id):
+    try:
+        import json
+        data = json.loads(request.body)
+        new_stock = int(data.get('new_stock'))
+        from .models import Product, UserLog
+        product = Product.objects.get(id=product_id)
+        old_stock = product.current_stock
+        product.current_stock = new_stock
+        product.save()
+        # Log the change
+        UserLog.objects.create(
+            user=request.user,
+            action='update_stock',
+            description=f"Ajustement du stock produit {product.name} (ID {product.id}) de {old_stock} à {new_stock}",
+            ip_address=request.META.get('REMOTE_ADDR')
+        )
+        return JsonResponse({'success': True, 'new_stock': new_stock})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+from django.shortcuts import render
+
+# Vue pour la page d'inventaire rapide
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def inventory_rapid_view(request):
+    """Affiche la page d'inventaire rapide"""
+    return render(request, 'products/inventory_rapid.html')
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -352,7 +434,6 @@ def product_update_api(request, product_id):
         # Ajout ou modification de l'image principale si présente
         if files and files.get('main_image'):
             product.main_image = files['main_image']
-        # Si aucune nouvelle image n'est envoyée, on ne modifie pas le champ main_image
         product.save()
         
         # Create stock movement if stock changed

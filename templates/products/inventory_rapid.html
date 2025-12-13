@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto py-6">
+    <h1 class="text-2xl font-bold mb-4">Inventaire Rapide</h1>
+    <div class="mb-4 flex flex-wrap gap-2 items-center">
+        <input type="text" id="search" placeholder="Rechercher un produit..." class="input input-bordered w-64" />
+        <select id="categoryFilter" class="input input-bordered">
+            <option value="">Toutes les catégories</option>
+            <!-- Catégories dynamiques -->
+        </select>
+        <button id="exportInventory" class="btn btn-primary ml-2">Exporter</button>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="table w-full table-zebra">
+            <thead>
+                <tr>
+                    <th>Image</th>
+                    <th>Nom</th>
+                    <th>Catégorie</th>
+                    <th>Stock actuel</th>
+                    <th>Stock min</th>
+                    <th>Stock max</th>
+                    <th>Prix vente</th>
+                    <th>Statut</th>
+                    <th>Ajuster</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+                <!-- Lignes dynamiques -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal d'ajustement de stock -->
+<div id="adjustModal" class="modal hidden">
+    <div class="modal-box">
+        <h3 class="font-bold text-lg mb-2">Ajuster le stock</h3>
+        <form id="adjustForm">
+            <input type="hidden" id="adjustProductId" />
+            <div class="mb-2">
+                <label for="newStock" class="block">Nouveau stock :</label>
+                <input type="number" id="newStock" class="input input-bordered w-full" required />
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" class="btn" id="cancelAdjust">Annuler</button>
+                <button type="submit" class="btn btn-primary">Valider</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="/static/js/inventory_rapid.js"></script>
+{% endblock %}
