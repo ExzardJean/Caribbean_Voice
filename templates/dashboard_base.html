@@ -88,27 +88,50 @@
                 {% endif %}
                 
                 <a href="{% url 'stock_alerts' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors {% if request.resolver_match.url_name == 'stock_alerts' %}bg-blue-600 text-white{% else %}text-slate-300 hover:bg-slate-800 hover:text-white{% endif %}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                    </svg>
-                    <span class="text-sm font-medium">Alertes</span>
-                    {% if alerts_count > 0 %}
-                    <span class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ alerts_count }}</span>
-                    {% endif %}
+                    <div class="relative w-full">
+                        <button onclick="toggleSidebarAlertDropdown()" class="flex items-center gap-3 w-full">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                            <span class="text-sm font-medium">Alertes</span>
+                            {% if low_stock_alert_count > 0 %}
+                            <span class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{{ low_stock_alert_count }}</span>
+                            {% endif %}
+                        </button>
+                        <div id="sidebar-alert-dropdown" class="hidden absolute left-0 mt-2 w-64 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
+                            <div class="p-3 font-semibold text-slate-700 border-b">Produits en stock faible</div>
+                            {% if low_stock_alert_count > 0 %}
+                                <ul class="max-h-60 overflow-y-auto">
+                                    {% for product in low_stock_alert_products %}
+                                    <li class="px-4 py-2 text-sm text-slate-800 hover:bg-slate-100 flex justify-between">
+                                        <span>{{ product.name }}</span>
+                                        <span class="font-bold text-red-500">{{ product.current_stock }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="px-4 py-3 text-sm text-slate-500">Aucune alerte de stock faible.</div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </a>
             </nav>
 
             <!-- User Profile -->
             <div class="border-t border-slate-800 p-4">
                 <div class="flex items-center gap-3 p-2">
-                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {{ request.user.first_name.0|default:request.user.username.0|upper }}
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold overflow-hidden">
+                        {% if request.user.profile_image %}
+                            <img src="{{ request.user.profile_image.url }}" alt="Photo de profil" class="w-full h-full object-cover rounded-full" />
+                        {% else %}
+                            {{ request.user.first_name.0|default:request.user.username.0|upper }}
+                        {% endif %}
                     </div>
                     <div class="flex-1">
-                        <div class="text-white text-sm font-medium">{{ request.user.get_full_name|default:request.user.username }}</div>
+                        <a href="{% url 'profile' %}" class="text-white text-sm font-medium hover:underline cursor-pointer block">{{ request.user.get_full_name|default:request.user.username }}</a>
                         <div class="text-slate-400 text-xs capitalize">{{ request.user.get_role_display }}</div>
                     </div>
-                    <a href="{% url 'logout' %}" class="text-slate-400 hover:text-white">
+                    <a href="{% url 'logout' %}" class="text-slate-400 hover:text-white ml-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                         </svg>
@@ -137,22 +160,45 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <a href="{% url 'stock_alerts' %}" class="relative text-slate-600 hover:text-slate-900">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-                        </svg>
-                        {% if alerts_count > 0 %}
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{{ alerts_count }}</span>
-                        {% endif %}
-                    </a>
+                    <div class="relative">
+                        <button onclick="toggleHeaderAlertDropdown()" class="relative text-slate-600 hover:text-slate-900 focus:outline-none">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            {% if low_stock_alert_count > 0 %}
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{{ low_stock_alert_count }}</span>
+                            {% endif %}
+                        </button>
+                        <div id="header-alert-dropdown" class="hidden absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
+                            <div class="p-3 font-semibold text-slate-700 border-b">Produits en stock faible</div>
+                            {% if low_stock_alert_count > 0 %}
+                                <ul class="max-h-60 overflow-y-auto">
+                                    {% for product in low_stock_alert_products %}
+                                    <li class="px-4 py-2 text-sm text-slate-800 hover:bg-slate-100 flex justify-between">
+                                        <span>{{ product.name }}</span>
+                                        <span class="font-bold text-red-500">{{ product.current_stock }}</span>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            {% else %}
+                                <div class="px-4 py-3 text-sm text-slate-500">Aucune alerte de stock faible.</div>
+                            {% endif %}
+                        </div>
+                    </div>
                     <div class="hidden lg:flex items-center gap-2">
-                        <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {{ request.user.first_name.0|default:request.user.username.0|upper }}
-                        </div>
-                        <div class="text-sm">
-                            <div class="font-medium text-slate-900">{{ request.user.get_full_name|default:request.user.username }}</div>
-                            <div class="text-slate-500 text-xs capitalize">{{ request.user.get_role_display }}</div>
-                        </div>
+                        <a href="{% url 'profile' %}" class="flex items-center gap-2 group">
+                            <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm overflow-hidden group-hover:ring-2 group-hover:ring-blue-400 transition">
+                                {% if request.user.profile_image %}
+                                    <img src="{{ request.user.profile_image.url }}" alt="Photo de profil" class="w-full h-full object-cover rounded-full" />
+                                {% else %}
+                                    {{ request.user.first_name.0|default:request.user.username.0|upper }}
+                                {% endif %}
+                            </div>
+                            <div class="text-sm">
+                                <div class="font-medium text-slate-900 group-hover:underline">{{ request.user.get_full_name|default:request.user.username }}</div>
+                                <div class="text-slate-500 text-xs capitalize">{{ request.user.get_role_display }}</div>
+                            </div>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -165,6 +211,14 @@
     </div>
 
 <script>
+        function toggleSidebarAlertDropdown() {
+            const dropdown = document.getElementById('sidebar-alert-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
+        function toggleHeaderAlertDropdown() {
+            const dropdown = document.getElementById('header-alert-dropdown');
+            dropdown.classList.toggle('hidden');
+        }
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar');
         if (window.innerWidth < 1024) {

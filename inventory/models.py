@@ -27,6 +27,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='vendeur')
     phone = models.CharField(max_length=50, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
+    profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True, verbose_name='Photo de profil')
     
     class Meta:
         verbose_name = 'Utilisateur'

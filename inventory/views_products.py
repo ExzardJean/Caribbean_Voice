@@ -5,8 +5,22 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.http.multipartparser import MultiPartParser
+from django.core.files.uploadhandler import MemoryFileUploadHandler, TemporaryFileUploadHandler
+from .models import Product, UserLog
+from .models import Product
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from django.db.models import Q, F
+from decimal import Decimal
+import json
+from .models import Product, Category, StockMovement
+
 def export_inventory(request):
-    from .models import Product
     products = Product.objects.filter(is_active=True).select_related('category').order_by('-created_at')
     # Prepare data
     data = []
@@ -45,7 +59,6 @@ def export_inventory(request):
         response = HttpResponse(output.getvalue(), content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="inventaire.csv"'
         return response
-from django.views.decorators.csrf import csrf_exempt
 
 # API pour ajuster le stock d'un produit
 @csrf_exempt
@@ -56,7 +69,6 @@ def adjust_product_stock_api(request, product_id):
         import json
         data = json.loads(request.body)
         new_stock = int(data.get('new_stock'))
-        from .models import Product, UserLog
         product = Product.objects.get(id=product_id)
         old_stock = product.current_stock
         product.current_stock = new_stock
@@ -71,23 +83,13 @@ def adjust_product_stock_api(request, product_id):
         return JsonResponse({'success': True, 'new_stock': new_stock})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
-from django.shortcuts import render
+
 
 # Vue pour la page d'inventaire rapide
-from django.contrib.auth.decorators import login_required
-
 @login_required
 def inventory_rapid_view(request):
     """Affiche la page d'inventaire rapide"""
     return render(request, 'products/inventory_rapid.html')
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_http_methods
-from django.db.models import Q, F
-from decimal import Decimal
-import json
-
-from .models import Product, Category, StockMovement
 
 
 @login_required
@@ -354,8 +356,6 @@ def product_update_api(request, product_id):
         product = Product.objects.get(id=product_id)
         if request.method == 'PUT' and request.content_type.startswith('multipart/form-data'):
             # Utilise MultiPartParser pour parser le body PUT
-            from django.http.multipartparser import MultiPartParser
-            from django.core.files.uploadhandler import MemoryFileUploadHandler, TemporaryFileUploadHandler
             request.upload_handlers = [MemoryFileUploadHandler(request), TemporaryFileUploadHandler(request)]
             parser = MultiPartParser(request.META, request, request.upload_handlers)
             data, files = parser.parse()
@@ -431,11 +431,10 @@ def product_update_api(request, product_id):
             product.is_active = parse_bool(data['is_active'], True)
         if 'is_featured' in data:
             product.is_featured = parse_bool(data['is_featured'], False)
-        # Ajout ou modification de l'image principale si présente
         if files and files.get('main_image'):
             product.main_image = files['main_image']
         product.save()
-        
+
         # Create stock movement if stock changed
         if stock_changed:
             StockMovement.objects.create(
