@@ -379,13 +379,14 @@ def pos(request):
     products_list = Product.objects.filter(is_active=True, current_stock__gt=0).select_related('category')
     customers_list = Customer.objects.filter(is_active=True).order_by('first_name')
     alerts_count = StockAlert.objects.filter(is_resolved=False).count()
-    
+    from django.db.models import F
+    low_stock_count = Product.objects.filter(is_active=True, current_stock__lte=F('min_stock_level')).count()
     context = {
         'products': products_list,
         'customers': customers_list,
         'alerts_count': alerts_count,
+        'low_stock_count': low_stock_count,
     }
-    
     return render(request, 'pos.html', context)
 
 

@@ -1,6 +1,17 @@
 {% extends 'dashboard_base.html' %}
 
 {% block dashboard_content %}
+{% if low_stock_count > 0 %}
+<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded mb-4 flex items-center gap-4 animate-pulse">
+    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z"></path>
+    </svg>
+    <div>
+        <span class="font-semibold">Attention :</span> {{ low_stock_count }} produit(s) ont un stock faible !
+        <a href="/products/?filter=low_stock" class="ml-2 underline text-yellow-700 hover:text-yellow-900">Voir les produits concernés</a>
+    </div>
+</div>
+{% endif %}
 <div id="open-register-success" class="hidden fixed left-1/2 -translate-x-1/2 top-6 z-50 px-6 py-3 bg-green-600 text-white rounded-lg shadow-lg text-lg font-semibold transition-all duration-300"></div>
 <div class="h-[calc(100vh-80px)] flex flex-col bg-slate-50" style="background-color: #f8fafc; color: #222;">
     <!-- POS Header -->
