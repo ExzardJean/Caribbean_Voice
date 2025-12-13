@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.2.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+
+  - repo: local
+    hooks:
+      - id: pip-freeze
+        name: Generate requirements.txt with pip freeze
+        entry: bash -c "source PDI_env/Scripts/activate && pip freeze > requirements.txt"
+        language: system
+        pass_filenames: false
+        files: \.py$
+
+  - repo: local
+    hooks:
+      - id: django-check
+        name: Run Django Check
+        entry: bash -c "source PDI_env/Scripts/activate && python manage.py check"
+        language: system
+        pass_filenames: false
+        types: [python]
